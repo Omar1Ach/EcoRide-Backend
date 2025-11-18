@@ -8,6 +8,12 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.8" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="10.0.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\BuildingBlocks\EcoRide.BuildingBlocks.Application\EcoRide.BuildingBlocks.Application.csproj" />
+    <ProjectReference Include="..\Modules\Security\EcoRide.Modules.Security\EcoRide.Modules.Security.csproj" />
   </ItemGroup>
 
 </Project>
