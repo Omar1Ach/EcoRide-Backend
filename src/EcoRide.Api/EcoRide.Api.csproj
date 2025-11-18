@@ -11,6 +11,11 @@
   </ItemGroup>
 
   <ItemGroup>
+<<<<<<< Updated upstream
+=======
+    <ProjectReference Include="..\BuildingBlocks\EcoRide.BuildingBlocks.Application\EcoRide.BuildingBlocks.Application.csproj" />
+    <ProjectReference Include="..\Modules\Security\EcoRide.Modules.Security\EcoRide.Modules.Security.csproj" />
+>>>>>>> Stashed changes
     <ProjectReference Include="..\Modules\Fleet\EcoRide.Modules.Fleet\EcoRide.Modules.Fleet.csproj" />
   </ItemGroup>
 
