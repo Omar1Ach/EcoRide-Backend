@@ -1,0 +1,109 @@
+version: '3.8'
+
+services:
+  # PostgreSQL 16 with PostGIS (Geospatial Extension)
+  postgres:
+    image: postgis/postgis:16-3.4
+    container_name: ecoride-postgres
+    environment:
+      POSTGRES_DB: EcoRide
+      POSTGRES_USER: ecoride_user
+      POSTGRES_PASSWORD: EcoRide2025!Strong
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/migrations:/docker-entrypoint-initdb.d
+    networks:
+      - ecoride-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ecoride_user -d EcoRide"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis 7.2 (Caching + Session Storage)
+  redis:
+    image: redis:7.2-alpine
+    container_name: ecoride-redis
+    command: redis-server --appendonly yes --requirepass "EcoRide2025!Redis"
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - ecoride-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # RabbitMQ 3.13 (Message Queue for Event-Driven Architecture)
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    container_name: ecoride-rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: ecoride
+      RABBITMQ_DEFAULT_PASS: EcoRide2025!Rabbit
+    ports:
+      - "5672:5672"   # AMQP port
+      - "15672:15672" # Management UI
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - ecoride-network
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # Seq (Structured Logging & Monitoring)
+  seq:
+    image: datalust/seq:latest
+    container_name: ecoride-seq
+    environment:
+      ACCEPT_EULA: Y
+      SEQ_FIRSTRUN_ADMINPASSWORDHASH: "EcoRide2025!Seq"
+    ports:
+      - "5341:80"     # Seq UI
+      - "5342:5341"   # Ingestion port
+    volumes:
+      - seq_data:/data
+    networks:
+      - ecoride-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/api/"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # PgAdmin 4 (Optional - PostgreSQL Management Tool)
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: ecoride-pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@ecoride.ma
+      PGADMIN_DEFAULT_PASSWORD: EcoRide2025!PgAdmin
+      PGADMIN_LISTEN_PORT: 80
+    ports:
+      - "5050:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    networks:
+      - ecoride-network
+    depends_on:
+      - postgres
+
+networks:
+  ecoride-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  redis_data:
+  rabbitmq_data:
+  seq_data:
+  pgadmin_data:

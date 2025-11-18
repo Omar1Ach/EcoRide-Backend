@@ -1,0 +1,91 @@
+# Project Documentation (exclude from git)
+00_README.md.pdf
+01_Product_Vision_Document.md.pdf
+02_Product_Requirements_Document_PRD.md.pdf
+03_System_Architecture_Document.md.pdf
+05_Test_Plan.md.pdf
+06_Timeline_And_Budget.md.pdf
+04_Database_Schema.sql
+
+# .NET
+bin/
+obj/
+*.user
+*.suo
+*.userprefs
+.vs/
+.vscode/
+*.DotSettings.user
+
+# Build results
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+[Ww][Ii][Nn]32/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+bld/
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+
+# NuGet
+*.nupkg
+*.snupkg
+**/packages/*
+!**/packages/build/
+*.nuget.props
+*.nuget.targets
+project.lock.json
+project.fragment.lock.json
+artifacts/
+
+# Test Results
+TestResults/
+*.trx
+*.coverage
+*.coveragexml
+
+# Environment Variables
+.env
+.env.local
+.env.*.local
+appsettings.Development.json
+appsettings.Production.json
+
+# Secrets
+secrets.json
+*.pfx
+*.p12
+*.key
+
+# Docker
+docker-compose.override.yml
+
+# IDEs
+.idea/
+*.swp
+*.bak
+*.tmp
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Node (if using for frontend)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
