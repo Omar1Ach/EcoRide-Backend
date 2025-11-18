@@ -18,4 +18,8 @@
     <Using Include="Xunit" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Modules\Security\EcoRide.Modules.Security\EcoRide.Modules.Security.csproj" />
+  </ItemGroup>
+
 </Project>

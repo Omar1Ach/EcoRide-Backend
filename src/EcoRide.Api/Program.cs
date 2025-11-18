@@ -1,8 +1,5 @@
 using EcoRide.BuildingBlocks.Application;
-<<<<<<< Updated upstream
-=======
 using EcoRide.Modules.Security.Infrastructure;
->>>>>>> Stashed changes
 using EcoRide.Modules.Fleet.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -28,17 +25,11 @@ builder.Services.AddCors(options =>
 // Add Application layer (MediatR, FluentValidation, Behaviors)
 builder.Services.AddApplication(
     typeof(Program).Assembly,
-<<<<<<< Updated upstream
-    typeof(EcoRide.Modules.Fleet.Application.Queries.GetNearbyVehicles.GetNearbyVehiclesQuery).Assembly);
-
-// Add Infrastructure layer (DbContext, Repositories)
-=======
     typeof(EcoRide.Modules.Security.Application.Commands.RegisterUser.RegisterUserCommand).Assembly,
     typeof(EcoRide.Modules.Fleet.Application.Queries.GetNearbyVehicles.GetNearbyVehiclesQuery).Assembly);
 
 // Add Infrastructure layer (DbContext, Repositories, Services)
 builder.Services.AddSecurityInfrastructure(builder.Configuration);
->>>>>>> Stashed changes
 builder.Services.AddFleetInfrastructure(builder.Configuration);
 
 var app = builder.Build();
