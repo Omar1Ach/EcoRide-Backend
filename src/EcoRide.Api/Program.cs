@@ -8,15 +8,7 @@ builder.Services.AddControllers();
 
 // Add Swagger/OpenAPI
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen(options =>
-{
-    options.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo
-    {
-        Title = "EcoRide API",
-        Version = "v1",
-        Description = "EcoRide - Tourism-focused bike/scooter sharing platform for Morocco"
-    });
-});
+builder.Services.AddSwaggerGen();
 
 // Add CORS for development
 builder.Services.AddCors(options =>
