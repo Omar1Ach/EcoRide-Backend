@@ -20,6 +20,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Modules\Security\EcoRide.Modules.Security\EcoRide.Modules.Security.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Fleet\EcoRide.Modules.Fleet\EcoRide.Modules.Fleet.csproj" />
   </ItemGroup>
 
 </Project>

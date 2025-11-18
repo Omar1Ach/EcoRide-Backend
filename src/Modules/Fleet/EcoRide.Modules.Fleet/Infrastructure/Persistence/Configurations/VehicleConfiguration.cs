@@ -1,9 +1,9 @@
 using EcoRide.Modules.Fleet.Domain.Aggregates;
 using EcoRide.Modules.Fleet.Domain.Enums;
-using EcoRide.Modules.Fleet.Domain.ValueObjects;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using NetTopologySuite.Geometries;
+using ValueObjects = EcoRide.Modules.Fleet.Domain.ValueObjects;
 
 namespace EcoRide.Modules.Fleet.Infrastructure.Persistence.Configurations;
 
@@ -46,7 +46,7 @@ public sealed class VehicleConfiguration : IEntityTypeConfiguration<Vehicle>
             .IsRequired()
             .HasConversion(
                 battery => battery.Value,
-                value => BatteryLevel.Create(value).Value);
+                value => ValueObjects.BatteryLevel.Create(value).Value);
 
         // PostGIS Point mapping for location
         builder.Property(v => v.Location)
@@ -55,7 +55,7 @@ public sealed class VehicleConfiguration : IEntityTypeConfiguration<Vehicle>
             .IsRequired()
             .HasConversion(
                 location => new Point(location.Longitude, location.Latitude) { SRID = 4326 },
-                point => Location.Create(point.Y, point.X).Value);
+                point => ValueObjects.Location.Create(point.Y, point.X).Value);
 
         builder.Property(v => v.LastLocationUpdate)
             .HasColumnName("last_location_update")

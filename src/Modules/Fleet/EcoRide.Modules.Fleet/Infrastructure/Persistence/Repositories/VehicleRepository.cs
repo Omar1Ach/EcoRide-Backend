@@ -1,9 +1,9 @@
 using EcoRide.Modules.Fleet.Domain.Aggregates;
 using EcoRide.Modules.Fleet.Domain.Enums;
 using EcoRide.Modules.Fleet.Domain.Repositories;
-using EcoRide.Modules.Fleet.Domain.ValueObjects;
 using Microsoft.EntityFrameworkCore;
 using NetTopologySuite.Geometries;
+using ValueObjects = EcoRide.Modules.Fleet.Domain.ValueObjects;
 
 namespace EcoRide.Modules.Fleet.Infrastructure.Persistence.Repositories;
 
@@ -32,22 +32,27 @@ public sealed class VehicleRepository : IVehicleRepository
     }
 
     public async Task<List<Vehicle>> GetNearbyVehiclesAsync(
-        Location userLocation,
+        ValueObjects.Location userLocation,
         int radiusMeters,
         CancellationToken cancellationToken = default)
     {
-        // Create PostGIS Point for user location
-        var userPoint = new Point(userLocation.Longitude, userLocation.Latitude) { SRID = 4326 };
-
-        // Query using PostGIS ST_DWithin function
+        // Use raw SQL with PostGIS ST_DWithin for spatial query
         // ST_DWithin works with geography type and uses meters for distance
         var vehicles = await _context.Vehicles
-            .Where(v =>
-                // Filter by available status and good battery level
-                (v.Status == VehicleStatus.Available &&
-                 v.BatteryLevel.Value >= BatteryLevel.LowBatteryThreshold) &&
-                // Spatial filter: within radius
-                EF.Functions.IsWithinDistance(v.Location, userPoint, radiusMeters))
+            .FromSqlRaw(@"
+                SELECT * FROM fleet.vehicles
+                WHERE status = {0}
+                AND battery_level >= {1}
+                AND ST_DWithin(
+                    location,
+                    ST_SetSRID(ST_MakePoint({2}, {3}), 4326)::geography,
+                    {4}
+                )",
+                VehicleStatus.Available.ToString(),
+                ValueObjects.BatteryLevel.LowBatteryThreshold,
+                userLocation.Longitude,
+                userLocation.Latitude,
+                radiusMeters)
             .ToListAsync(cancellationToken);
 
         return vehicles;
