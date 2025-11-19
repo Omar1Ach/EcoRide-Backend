@@ -1,3 +1,4 @@
+using EcoRide.Modules.Trip.Application.Commands.EndTrip;
 using EcoRide.Modules.Trip.Application.Commands.StartTrip;
 using EcoRide.Modules.Trip.Application.DTOs;
 using EcoRide.Modules.Trip.Application.Queries.GetActiveTripStats;
@@ -10,6 +11,7 @@ namespace EcoRide.Api.Controllers;
 /// API endpoints for trip management
 /// Implements US-004: Start Trip (QR Scan)
 /// Implements US-005: Active Trip Tracking
+/// Implements US-006: End Trip & Payment
 /// </summary>
 [ApiController]
 [Route("api/trips")]
@@ -75,6 +77,30 @@ public class TripsController : ControllerBase
         var contacts = EmergencyContacts.GetContacts();
         return Ok(contacts);
     }
+
+    /// <summary>
+    /// End the active trip and process payment (TC-050 to TC-052)
+    /// US-006: End Trip & Payment
+    /// </summary>
+    [HttpPost("end")]
+    public async Task<IActionResult> EndTrip(
+        [FromBody] EndTripRequest request,
+        CancellationToken cancellationToken)
+    {
+        var command = new EndTripCommand(
+            request.UserId,
+            request.EndLatitude,
+            request.EndLongitude);
+
+        var result = await _sender.Send(command, cancellationToken);
+
+        if (result.IsFailure)
+        {
+            return BadRequest(new { error = result.Error.Message, code = result.Error.Code });
+        }
+
+        return Ok(result.Value);
+    }
 }
 
 /// <summary>
@@ -85,3 +111,11 @@ public sealed record StartTripRequest(
     string QRCode,
     double StartLatitude,
     double StartLongitude);
+
+/// <summary>
+/// Request model for ending a trip
+/// </summary>
+public sealed record EndTripRequest(
+    Guid UserId,
+    double EndLatitude,
+    double EndLongitude);

@@ -19,6 +19,7 @@ public sealed class User : AggregateRoot<Guid>
     public bool IsActive { get; private set; }
     public bool PhoneVerified { get; private set; }
     public bool EmailVerified { get; private set; }
+    public decimal WalletBalance { get; private set; } // BR-005: User wallet for payments
     public DateTime CreatedAt { get; private set; }
     public DateTime UpdatedAt { get; private set; }
     public DateTime? DeletedAt { get; private set; }
@@ -43,6 +44,7 @@ public sealed class User : AggregateRoot<Guid>
         IsActive = true;
         PhoneVerified = false;
         EmailVerified = false;
+        WalletBalance = 0m; // Start with zero balance
         CreatedAt = DateTime.UtcNow;
         UpdatedAt = DateTime.UtcNow;
     }
@@ -130,6 +132,46 @@ public sealed class User : AggregateRoot<Guid>
 
         IsActive = false;
         DeletedAt = DateTime.UtcNow;
+        UpdatedAt = DateTime.UtcNow;
+
+        return Result.Success();
+    }
+
+    /// <summary>
+    /// Deduct amount from wallet (BR-005: Payment processing)
+    /// </summary>
+    public Result DeductFromWallet(decimal amount)
+    {
+        if (amount <= 0)
+        {
+            return Result.Failure(
+                new Error("User.InvalidAmount", "Amount must be greater than zero"));
+        }
+
+        if (WalletBalance < amount)
+        {
+            return Result.Failure(
+                new Error("User.InsufficientFunds", $"Insufficient wallet balance. Available: {WalletBalance} MAD, Required: {amount} MAD"));
+        }
+
+        WalletBalance -= amount;
+        UpdatedAt = DateTime.UtcNow;
+
+        return Result.Success();
+    }
+
+    /// <summary>
+    /// Add funds to wallet (BR-005: Wallet top-up)
+    /// </summary>
+    public Result AddToWallet(decimal amount)
+    {
+        if (amount <= 0)
+        {
+            return Result.Failure(
+                new Error("User.InvalidAmount", "Amount must be greater than zero"));
+        }
+
+        WalletBalance += amount;
         UpdatedAt = DateTime.UtcNow;
 
         return Result.Success();
