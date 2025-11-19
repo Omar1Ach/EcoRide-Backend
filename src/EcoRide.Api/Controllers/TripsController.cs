@@ -2,6 +2,7 @@ using EcoRide.Modules.Trip.Application.Commands.EndTrip;
 using EcoRide.Modules.Trip.Application.Commands.StartTrip;
 using EcoRide.Modules.Trip.Application.DTOs;
 using EcoRide.Modules.Trip.Application.Queries.GetActiveTripStats;
+using EcoRide.Modules.Trip.Application.Queries.GetTripHistory;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
@@ -12,6 +13,7 @@ namespace EcoRide.Api.Controllers;
 /// Implements US-004: Start Trip (QR Scan)
 /// Implements US-005: Active Trip Tracking
 /// Implements US-006: End Trip & Payment
+/// Implements US-007: Trip History
 /// </summary>
 [ApiController]
 [Route("api/trips")]
@@ -76,6 +78,28 @@ public class TripsController : ControllerBase
     {
         var contacts = EmergencyContacts.GetContacts();
         return Ok(contacts);
+    }
+
+    /// <summary>
+    /// Get user's trip history with pagination (TC-060 to TC-064)
+    /// US-007: Trip History - View past trips sorted by date
+    /// </summary>
+    [HttpGet("history")]
+    public async Task<IActionResult> GetTripHistory(
+        [FromQuery] Guid userId,
+        [FromQuery] int pageNumber = 1,
+        [FromQuery] int pageSize = 20,
+        CancellationToken cancellationToken = default)
+    {
+        var query = new GetTripHistoryQuery(userId, pageNumber, pageSize);
+        var result = await _sender.Send(query, cancellationToken);
+
+        if (result.IsFailure)
+        {
+            return BadRequest(new { error = result.Error.Message, code = result.Error.Code });
+        }
+
+        return Ok(result.Value);
     }
 
     /// <summary>

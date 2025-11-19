@@ -47,6 +47,26 @@ public sealed class ActiveTripRepository : IActiveTripRepository
             .ToListAsync(cancellationToken);
     }
 
+    public async Task<(List<ActiveTrip> Trips, int TotalCount)> GetTripHistoryAsync(
+        Guid userId,
+        int pageNumber,
+        int pageSize,
+        CancellationToken cancellationToken = default)
+    {
+        var query = _context.Trips
+            .Where(t => t.UserId == userId && t.Status == TripStatus.Completed)
+            .OrderByDescending(t => t.StartTime);
+
+        var totalCount = await query.CountAsync(cancellationToken);
+
+        var trips = await query
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync(cancellationToken);
+
+        return (trips, totalCount);
+    }
+
     public async Task AddAsync(ActiveTrip trip, CancellationToken cancellationToken = default)
     {
         await _context.Trips.AddAsync(trip, cancellationToken);

@@ -15,6 +15,12 @@ public interface IActiveTripRepository
 
     Task<List<ActiveTrip>> GetByUserIdAsync(Guid userId, CancellationToken cancellationToken = default);
 
+    Task<(List<ActiveTrip> Trips, int TotalCount)> GetTripHistoryAsync(
+        Guid userId,
+        int pageNumber,
+        int pageSize,
+        CancellationToken cancellationToken = default);
+
     Task AddAsync(ActiveTrip trip, CancellationToken cancellationToken = default);
 
     void Update(ActiveTrip trip);
