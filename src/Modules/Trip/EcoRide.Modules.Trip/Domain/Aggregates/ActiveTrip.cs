@@ -6,15 +6,18 @@ namespace EcoRide.Modules.Trip.Domain.Aggregates;
 
 /// <summary>
 /// Trip aggregate - represents an active rental trip
-/// Business Rules (BR-003):
+/// Business Rules (BR-004):
 /// - Base cost: 5 MAD
-/// - Per-minute rate: 1 MAD/min
+/// - Per-minute rate: 1.5 MAD/min
+/// - Cost rounds to nearest MAD
+/// - Mock distance: +100m/minute
 /// - Trip must start from active reservation
 /// </summary>
 public sealed class ActiveTrip : AggregateRoot<Guid>
 {
     public const decimal BaseCostMAD = 5.0m;
-    public const decimal PerMinuteRateMAD = 1.0m;
+    public const decimal PerMinuteRateMAD = 1.5m;
+    public const int MockDistanceMetersPerMinute = 100;
 
     public Guid UserId { get; private set; }
     public Guid VehicleId { get; private set; }
@@ -118,8 +121,9 @@ public sealed class ActiveTrip : AggregateRoot<Guid>
         var duration = EndTime.Value - StartTime;
         DurationMinutes = (int)Math.Ceiling(duration.TotalMinutes);
 
-        // Calculate total cost: Base + (Minutes * Rate)
-        TotalCost = BaseCostMAD + (DurationMinutes * PerMinuteRateMAD);
+        // Calculate total cost: Base + (Minutes * Rate), rounded to nearest MAD (BR-004)
+        var cost = BaseCostMAD + (DurationMinutes * PerMinuteRateMAD);
+        TotalCost = Math.Round(cost, 0, MidpointRounding.AwayFromZero);
 
         UpdatedAt = DateTime.UtcNow;
 
@@ -160,7 +164,7 @@ public sealed class ActiveTrip : AggregateRoot<Guid>
     }
 
     /// <summary>
-    /// Get current estimated cost
+    /// Get current estimated cost (BR-004: rounded to nearest MAD)
     /// </summary>
     public decimal GetCurrentEstimatedCost()
     {
@@ -170,7 +174,22 @@ public sealed class ActiveTrip : AggregateRoot<Guid>
         }
 
         var currentMinutes = GetCurrentDurationMinutes();
-        return BaseCostMAD + (currentMinutes * PerMinuteRateMAD);
+        var cost = BaseCostMAD + (currentMinutes * PerMinuteRateMAD);
+        return Math.Round(cost, 0, MidpointRounding.AwayFromZero); // Round to nearest MAD
+    }
+
+    /// <summary>
+    /// Get mock distance traveled (BR-004: +100m/minute)
+    /// </summary>
+    public int GetMockDistanceMeters()
+    {
+        if (Status != TripStatus.Active)
+        {
+            return DurationMinutes * MockDistanceMetersPerMinute;
+        }
+
+        var currentMinutes = GetCurrentDurationMinutes();
+        return currentMinutes * MockDistanceMetersPerMinute;
     }
 
     public bool IsActive() => Status == TripStatus.Active;
