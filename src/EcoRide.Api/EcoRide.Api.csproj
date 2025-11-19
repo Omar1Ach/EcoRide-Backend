@@ -19,6 +19,7 @@
     <ProjectReference Include="..\BuildingBlocks\EcoRide.BuildingBlocks.Application\EcoRide.BuildingBlocks.Application.csproj" />
     <ProjectReference Include="..\Modules\Security\EcoRide.Modules.Security\EcoRide.Modules.Security.csproj" />
     <ProjectReference Include="..\Modules\Fleet\EcoRide.Modules.Fleet\EcoRide.Modules.Fleet.csproj" />
+    <ProjectReference Include="..\Modules\Trip\EcoRide.Modules.Trip\EcoRide.Modules.Trip.csproj" />
   </ItemGroup>
 
 </Project>

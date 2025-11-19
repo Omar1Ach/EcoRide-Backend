@@ -1,6 +1,7 @@
 using EcoRide.BuildingBlocks.Application;
 using EcoRide.Modules.Security.Infrastructure;
 using EcoRide.Modules.Fleet.Infrastructure;
+using EcoRide.Modules.Trip.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -26,11 +27,13 @@ builder.Services.AddCors(options =>
 builder.Services.AddApplication(
     typeof(Program).Assembly,
     typeof(EcoRide.Modules.Security.Application.Commands.RegisterUser.RegisterUserCommand).Assembly,
-    typeof(EcoRide.Modules.Fleet.Application.Queries.GetNearbyVehicles.GetNearbyVehiclesQuery).Assembly);
+    typeof(EcoRide.Modules.Fleet.Application.Queries.GetNearbyVehicles.GetNearbyVehiclesQuery).Assembly,
+    typeof(EcoRide.Modules.Trip.Application.Commands.CreateReservation.CreateReservationCommand).Assembly);
 
 // Add Infrastructure layer (DbContext, Repositories, Services)
 builder.Services.AddSecurityInfrastructure(builder.Configuration);
 builder.Services.AddFleetInfrastructure(builder.Configuration);
+builder.Services.AddTripInfrastructure(builder.Configuration);
 
 var app = builder.Build();
 
