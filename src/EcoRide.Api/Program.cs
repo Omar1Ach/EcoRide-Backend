@@ -13,8 +13,8 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 
 // Add JWT Authentication
-var jwtSettings = builder.Configuration.GetSection("JwtSettings");
-var secretKey = jwtSettings["SecretKey"] ?? throw new InvalidOperationException("JWT SecretKey is not configured");
+var jwtSettings = builder.Configuration.GetSection("Jwt");
+var secretKey = jwtSettings["Secret"] ?? throw new InvalidOperationException("JWT SecretKey is not configured");
 
 builder.Services.AddAuthentication(options =>
 {

@@ -1,0 +1,94 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  build-and-test:
+    name: Build and Test
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: testpassword
+          POSTGRES_DB: EcoRide_Test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '9.0.x'
+
+    - name: Restore dependencies
+      run: dotnet restore
+
+    - name: Build solution
+      run: dotnet build --configuration Release --no-restore
+
+    - name: Run unit tests
+      run: dotnet test tests/EcoRide.UnitTests/EcoRide.UnitTests.csproj --configuration Release --no-build --verbosity normal --logger "trx;LogFileName=unit-test-results.trx"
+
+    - name: Run integration tests
+      env:
+        ConnectionStrings__DefaultConnection: "Host=localhost;Port=5432;Database=EcoRide_Test;Username=postgres;Password=testpassword"
+        Jwt__Secret: "YourSuperSecretKey256BitsLongMinimumForProductionUse!!ThisIsAVeryLongSecretKeyForEcoRide"
+        Jwt__Issuer: "EcoRide"
+        Jwt__Audience: "EcoRide.Users"
+        Jwt__AccessTokenExpiryMinutes: "15"
+        Jwt__RefreshTokenExpiryDays: "7"
+      run: dotnet test tests/EcoRide.IntegrationTests/EcoRide.IntegrationTests.csproj --configuration Release --no-build --verbosity normal --logger "trx;LogFileName=integration-test-results.trx"
+
+    - name: Publish test results
+      uses: dorny/test-reporter@v1
+      if: always()
+      with:
+        name: Test Results
+        path: '**/*.trx'
+        reporter: dotnet-trx
+        fail-on-error: true
+
+    - name: Test summary
+      if: always()
+      run: |
+        echo "## Test Results" >> $GITHUB_STEP_SUMMARY
+        echo "✅ Build completed successfully" >> $GITHUB_STEP_SUMMARY
+        echo "📊 Unit tests executed" >> $GITHUB_STEP_SUMMARY
+        echo "🔗 Integration tests executed" >> $GITHUB_STEP_SUMMARY
+
+  code-quality:
+    name: Code Quality
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '9.0.x'
+
+    - name: Restore dependencies
+      run: dotnet restore
+
+    - name: Check formatting
+      run: dotnet format --verify-no-changes --verbosity diagnostic
+
+    - name: Build warnings check
+      run: dotnet build --configuration Release --no-restore /warnaserror
