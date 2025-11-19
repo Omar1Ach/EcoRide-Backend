@@ -62,11 +62,31 @@ public class ValidationBehavior<TRequest, TResponse> : IPipelineBehavior<TReques
             return (Result.Failure(error) as TResult)!;
         }
 
-        var validationResult = typeof(Result<>)
-            .GetGenericTypeDefinition()
-            .MakeGenericType(typeof(TResult).GenericTypeArguments[0])
-            .GetMethod(nameof(Result.Failure))!
-            .Invoke(null, new object[] { error })!;
+        // Get the generic argument type (e.g., for Result<AuthResponse>, get AuthResponse)
+        var resultType = typeof(TResult);
+        if (!resultType.IsGenericType || resultType.GenericTypeArguments.Length == 0)
+        {
+            throw new InvalidOperationException($"TResult must be a generic type: {resultType.Name}");
+        }
+
+        var valueType = resultType.GenericTypeArguments[0];
+
+        // Create Result<T>.Failure(error)
+        var failureMethod = typeof(Result<>)
+            .MakeGenericType(valueType)
+            .GetMethod(nameof(Result.Failure), new[] { typeof(Error) });
+
+        if (failureMethod == null)
+        {
+            throw new InvalidOperationException($"Failure method not found on Result<{valueType.Name}>");
+        }
+
+        var validationResult = failureMethod.Invoke(null, new object[] { error });
+
+        if (validationResult == null)
+        {
+            throw new InvalidOperationException("Validation result is null");
+        }
 
         return (TResult)validationResult;
     }
