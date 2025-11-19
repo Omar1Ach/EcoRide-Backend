@@ -30,6 +30,7 @@ public static class DependencyInjection
 
         // Repositories
         services.AddScoped<IReservationRepository, ReservationRepository>();
+        services.AddScoped<IActiveTripRepository, ActiveTripRepository>();
 
         // Unit of Work
         services.AddScoped<IUnitOfWork>(sp => sp.GetRequiredService<TripDbContext>());

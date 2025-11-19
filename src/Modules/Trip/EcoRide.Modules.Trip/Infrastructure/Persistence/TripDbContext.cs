@@ -14,6 +14,7 @@ public sealed class TripDbContext : DbContext, IUnitOfWork
     }
 
     public DbSet<Reservation> Reservations => Set<Reservation>();
+    public DbSet<ActiveTrip> Trips => Set<ActiveTrip>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
