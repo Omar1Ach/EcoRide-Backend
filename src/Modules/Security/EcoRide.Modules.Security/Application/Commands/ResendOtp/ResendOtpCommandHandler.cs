@@ -1,10 +1,10 @@
-using EcoRide.BuildingBlocks.Application.Data;
 using EcoRide.BuildingBlocks.Application.Messaging;
 using EcoRide.BuildingBlocks.Domain;
 using EcoRide.Modules.Security.Application.Services;
 using EcoRide.Modules.Security.Domain.Aggregates;
 using EcoRide.Modules.Security.Domain.Repositories;
 using EcoRide.Modules.Security.Domain.ValueObjects;
+using EcoRide.Modules.Security.Infrastructure.Persistence;
 
 namespace EcoRide.Modules.Security.Application.Commands.ResendOtp;
 
@@ -15,16 +15,16 @@ public sealed class ResendOtpCommandHandler : ICommandHandler<ResendOtpCommand, 
 {
     private readonly IOtpRepository _otpRepository;
     private readonly ISmsService _smsService;
-    private readonly IUnitOfWork _unitOfWork;
+    private readonly SecurityDbContext _dbContext;
 
     public ResendOtpCommandHandler(
         IOtpRepository otpRepository,
         ISmsService smsService,
-        IUnitOfWork unitOfWork)
+        SecurityDbContext dbContext)
     {
         _otpRepository = otpRepository;
         _smsService = smsService;
-        _unitOfWork = unitOfWork;
+        _dbContext = dbContext;
     }
 
     public async Task<Result<string>> Handle(
@@ -68,7 +68,7 @@ public sealed class ResendOtpCommandHandler : ICommandHandler<ResendOtpCommand, 
         await _otpRepository.AddAsync(otpCode, cancellationToken);
 
         // Commit transaction
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
+        await _dbContext.SaveChangesAsync(cancellationToken);
 
         return Result.Success("OTP resent successfully");
     }

@@ -1,3 +1,4 @@
+using EcoRide.Modules.Fleet.Application.Queries.GetAllVehicles;
 using EcoRide.Modules.Fleet.Application.Queries.GetNearbyVehicles;
 using EcoRide.Modules.Fleet.Application.Queries.GetVehicleDetails;
 using MediatR;
@@ -17,6 +18,40 @@ public class VehiclesController : ControllerBase
     public VehiclesController(IMediator mediator)
     {
         _mediator = mediator;
+    }
+
+    /// <summary>
+    /// Get all vehicles with optional filtering and pagination
+    /// </summary>
+    /// <param name="status">Filter by status (Available, Reserved, InUse, Maintenance, Unavailable)</param>
+    /// <param name="type">Filter by type (Scooter, Bike)</param>
+    /// <param name="minBatteryLevel">Filter by minimum battery level (0-100)</param>
+    /// <param name="pageNumber">Page number (default: 1)</param>
+    /// <param name="pageSize">Page size (default: 50, max: 100)</param>
+    [HttpGet]
+    [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(object), StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> GetAllVehicles(
+        [FromQuery] string? status = null,
+        [FromQuery] string? type = null,
+        [FromQuery] int? minBatteryLevel = null,
+        [FromQuery] int pageNumber = 1,
+        [FromQuery] int pageSize = 50)
+    {
+        var query = new GetAllVehiclesQuery(status, type, minBatteryLevel, pageNumber, pageSize);
+
+        var result = await _mediator.Send(query);
+
+        if (result.IsFailure)
+        {
+            return BadRequest(new
+            {
+                error = result.Error.Code,
+                message = result.Error.Message
+            });
+        }
+
+        return Ok(result.Value);
     }
 
     /// <summary>

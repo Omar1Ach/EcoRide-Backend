@@ -1,4 +1,5 @@
 using EcoRide.Api.Models.Auth;
+using EcoRide.Modules.Security.Application.Commands.Login;
 using EcoRide.Modules.Security.Application.Commands.RegisterUser;
 using EcoRide.Modules.Security.Application.Commands.ResendOtp;
 using EcoRide.Modules.Security.Application.Commands.VerifyOtp;
@@ -122,5 +123,46 @@ public class AuthController : ControllerBase
         {
             message = result.Value
         });
+    }
+
+    /// <summary>
+    /// Login with email and password
+    /// Supports account lockout after 5 failed attempts and optional 2FA
+    /// </summary>
+    [HttpPost("login")]
+    [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(object), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(object), StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> Login([FromBody] LoginRequest request)
+    {
+        var command = new LoginCommand(
+            request.Email,
+            request.Password,
+            request.Enable2FA);
+
+        var result = await _mediator.Send(command);
+
+        if (result.IsFailure)
+        {
+            // Return 401 for invalid credentials
+            if (result.Error.Code == "Login.InvalidCredentials" ||
+                result.Error.Code == "Login.AccountLocked" ||
+                result.Error.Code == "Login.AccountInactive")
+            {
+                return Unauthorized(new
+                {
+                    error = result.Error.Code,
+                    message = result.Error.Message
+                });
+            }
+
+            return BadRequest(new
+            {
+                error = result.Error.Code,
+                message = result.Error.Message
+            });
+        }
+
+        return Ok(result.Value);
     }
 }

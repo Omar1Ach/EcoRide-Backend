@@ -1,4 +1,3 @@
-using EcoRide.BuildingBlocks.Application.Data;
 using EcoRide.BuildingBlocks.Application.Messaging;
 using EcoRide.BuildingBlocks.Domain;
 using EcoRide.Modules.Security.Application.DTOs;
@@ -6,6 +5,7 @@ using EcoRide.Modules.Security.Application.Services;
 using EcoRide.Modules.Security.Domain.Aggregates;
 using EcoRide.Modules.Security.Domain.Repositories;
 using EcoRide.Modules.Security.Domain.ValueObjects;
+using EcoRide.Modules.Security.Infrastructure.Persistence;
 
 namespace EcoRide.Modules.Security.Application.Commands.RegisterUser;
 
@@ -18,20 +18,20 @@ public sealed class RegisterUserCommandHandler : ICommandHandler<RegisterUserCom
     private readonly IOtpRepository _otpRepository;
     private readonly IPasswordHasher _passwordHasher;
     private readonly ISmsService _smsService;
-    private readonly IUnitOfWork _unitOfWork;
+    private readonly SecurityDbContext _dbContext;
 
     public RegisterUserCommandHandler(
         IUserRepository userRepository,
         IOtpRepository otpRepository,
         IPasswordHasher passwordHasher,
         ISmsService smsService,
-        IUnitOfWork unitOfWork)
+        SecurityDbContext dbContext)
     {
         _userRepository = userRepository;
         _otpRepository = otpRepository;
         _passwordHasher = passwordHasher;
         _smsService = smsService;
-        _unitOfWork = unitOfWork;
+        _dbContext = dbContext;
     }
 
     public async Task<Result<RegisterUserResponse>> Handle(
@@ -105,7 +105,7 @@ public sealed class RegisterUserCommandHandler : ICommandHandler<RegisterUserCom
         await _otpRepository.AddAsync(otpCode, cancellationToken);
 
         // Commit transaction
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
+        await _dbContext.SaveChangesAsync(cancellationToken);
 
         return Result.Success(new RegisterUserResponse(
             user.Id,

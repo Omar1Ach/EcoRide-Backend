@@ -1,4 +1,4 @@
-using EcoRide.BuildingBlocks.Application.Data;
+using EcoRide.Modules.Security.Application.Data;
 using EcoRide.Modules.Security.Domain.Aggregates;
 using Microsoft.EntityFrameworkCore;
 
@@ -6,8 +6,9 @@ namespace EcoRide.Modules.Security.Infrastructure.Persistence;
 
 /// <summary>
 /// DbContext for the Security module
+/// Implements ISecurityUnitOfWork for transaction management
 /// </summary>
-public sealed class SecurityDbContext : DbContext, IUnitOfWork
+public sealed class SecurityDbContext : DbContext, ISecurityUnitOfWork
 {
     public SecurityDbContext(DbContextOptions<SecurityDbContext> options)
         : base(options)
@@ -28,6 +29,17 @@ public sealed class SecurityDbContext : DbContext, IUnitOfWork
 
     public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
-        return await base.SaveChangesAsync(cancellationToken);
+        var entries = ChangeTracker.Entries().ToList();
+        Console.WriteLine($"[SecurityDbContext] SaveChangesAsync called with {entries.Count} entries");
+
+        foreach (var entry in entries)
+        {
+            Console.WriteLine($"  - {entry.Entity.GetType().Name}: {entry.State}");
+        }
+
+        var result = await base.SaveChangesAsync(cancellationToken);
+        Console.WriteLine($"[SecurityDbContext] Saved {result} changes to database");
+
+        return result;
     }
 }

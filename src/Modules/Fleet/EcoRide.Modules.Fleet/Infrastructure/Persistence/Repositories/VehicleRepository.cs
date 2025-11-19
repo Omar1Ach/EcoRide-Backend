@@ -58,6 +58,45 @@ public sealed class VehicleRepository : IVehicleRepository
         return vehicles;
     }
 
+    public async Task<(List<Vehicle> Vehicles, int TotalCount)> GetAllAsync(
+        string? status,
+        string? type,
+        int? minBatteryLevel,
+        int pageNumber,
+        int pageSize,
+        CancellationToken cancellationToken = default)
+    {
+        var query = _context.Vehicles.AsQueryable();
+
+        // Apply filters
+        if (!string.IsNullOrWhiteSpace(status))
+        {
+            query = query.Where(v => v.Status.ToString() == status);
+        }
+
+        if (!string.IsNullOrWhiteSpace(type))
+        {
+            query = query.Where(v => v.Type.ToString() == type);
+        }
+
+        if (minBatteryLevel.HasValue)
+        {
+            query = query.Where(v => v.BatteryLevel.Value >= minBatteryLevel.Value);
+        }
+
+        // Get total count before pagination
+        var totalCount = await query.CountAsync(cancellationToken);
+
+        // Apply pagination
+        var vehicles = await query
+            .OrderByDescending(v => v.CreatedAt)
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync(cancellationToken);
+
+        return (vehicles, totalCount);
+    }
+
     public async Task AddAsync(Vehicle vehicle, CancellationToken cancellationToken = default)
     {
         await _context.Vehicles.AddAsync(vehicle, cancellationToken);

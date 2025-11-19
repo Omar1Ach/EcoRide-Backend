@@ -1,10 +1,10 @@
-using EcoRide.BuildingBlocks.Application.Data;
 using EcoRide.BuildingBlocks.Application.Messaging;
 using EcoRide.BuildingBlocks.Domain;
 using EcoRide.Modules.Security.Application.DTOs;
 using EcoRide.Modules.Security.Application.Services;
 using EcoRide.Modules.Security.Domain.Repositories;
 using EcoRide.Modules.Security.Domain.ValueObjects;
+using EcoRide.Modules.Security.Infrastructure.Persistence;
 
 namespace EcoRide.Modules.Security.Application.Commands.VerifyOtp;
 
@@ -16,18 +16,18 @@ public sealed class VerifyOtpCommandHandler : ICommandHandler<VerifyOtpCommand, 
     private readonly IUserRepository _userRepository;
     private readonly IOtpRepository _otpRepository;
     private readonly IJwtTokenGenerator _jwtTokenGenerator;
-    private readonly IUnitOfWork _unitOfWork;
+    private readonly SecurityDbContext _dbContext;
 
     public VerifyOtpCommandHandler(
         IUserRepository userRepository,
         IOtpRepository otpRepository,
         IJwtTokenGenerator jwtTokenGenerator,
-        IUnitOfWork unitOfWork)
+        SecurityDbContext dbContext)
     {
         _userRepository = userRepository;
         _otpRepository = otpRepository;
         _jwtTokenGenerator = jwtTokenGenerator;
-        _unitOfWork = unitOfWork;
+        _dbContext = dbContext;
     }
 
     public async Task<Result<VerifyOtpResponse>> Handle(
@@ -57,7 +57,7 @@ public sealed class VerifyOtpCommandHandler : ICommandHandler<VerifyOtpCommand, 
         if (verifyResult.IsFailure)
         {
             _otpRepository.Update(otpCode);
-            await _unitOfWork.SaveChangesAsync(cancellationToken);
+            await _dbContext.SaveChangesAsync(cancellationToken);
             return Result.Failure<VerifyOtpResponse>(verifyResult.Error);
         }
 
@@ -92,7 +92,7 @@ public sealed class VerifyOtpCommandHandler : ICommandHandler<VerifyOtpCommand, 
         _otpRepository.Update(otpCode);
 
         // Commit transaction
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
+        await _dbContext.SaveChangesAsync(cancellationToken);
 
         return Result.Success(new VerifyOtpResponse(
             user.Id,

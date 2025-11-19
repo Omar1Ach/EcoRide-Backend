@@ -1,4 +1,4 @@
-using EcoRide.BuildingBlocks.Application.Data;
+using EcoRide.Modules.Security.Application.Data;
 using EcoRide.Modules.Security.Application.Services;
 using EcoRide.Modules.Security.Domain.Repositories;
 using EcoRide.Modules.Security.Infrastructure.Persistence;
@@ -11,7 +11,8 @@ using Microsoft.Extensions.DependencyInjection;
 namespace EcoRide.Modules.Security.Infrastructure;
 
 /// <summary>
-/// Extension methods for registering Infrastructure layer services
+/// Extension methods for registering Security module infrastructure services
+/// Follows Clean Architecture and Dependency Inversion Principle
 /// </summary>
 public static class DependencyInjection
 {
@@ -25,8 +26,8 @@ public static class DependencyInjection
                 configuration.GetConnectionString("DefaultConnection"),
                 npgsqlOptions => npgsqlOptions.MigrationsHistoryTable("__EFMigrationsHistory", "security")));
 
-        // Register IUnitOfWork
-        services.AddScoped<IUnitOfWork>(sp => sp.GetRequiredService<SecurityDbContext>());
+        // Register Security-specific Unit of Work (avoids conflicts with other modules)
+        services.AddScoped<ISecurityUnitOfWork>(sp => sp.GetRequiredService<SecurityDbContext>());
 
         // Register repositories
         services.AddScoped<IUserRepository, UserRepository>();
