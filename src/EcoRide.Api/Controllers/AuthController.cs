@@ -1,7 +1,10 @@
 using EcoRide.Api.Models.Auth;
+using EcoRide.Modules.Security.Application.Commands.ForgotPassword;
 using EcoRide.Modules.Security.Application.Commands.Login;
+using EcoRide.Modules.Security.Application.Commands.RefreshToken;
 using EcoRide.Modules.Security.Application.Commands.RegisterUser;
 using EcoRide.Modules.Security.Application.Commands.ResendOtp;
+using EcoRide.Modules.Security.Application.Commands.ResetPassword;
 using EcoRide.Modules.Security.Application.Commands.VerifyOtp;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
@@ -148,6 +151,101 @@ public class AuthController : ControllerBase
             if (result.Error.Code == "Login.InvalidCredentials" ||
                 result.Error.Code == "Login.AccountLocked" ||
                 result.Error.Code == "Login.AccountInactive")
+            {
+                return Unauthorized(new
+                {
+                    error = result.Error.Code,
+                    message = result.Error.Message
+                });
+            }
+
+            return BadRequest(new
+            {
+                error = result.Error.Code,
+                message = result.Error.Message
+            });
+        }
+
+        return Ok(result.Value);
+    }
+
+    /// <summary>
+    /// Request password reset code
+    /// Sends a 6-digit code to the user's registered phone number
+    /// </summary>
+    [HttpPost("forgot-password")]
+    [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(object), StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request)
+    {
+        var command = new ForgotPasswordCommand(request.Email);
+
+        var result = await _mediator.Send(command);
+
+        if (result.IsFailure)
+        {
+            return BadRequest(new
+            {
+                error = result.Error.Code,
+                message = result.Error.Message
+            });
+        }
+
+        return Ok(new
+        {
+            message = result.Value
+        });
+    }
+
+    /// <summary>
+    /// Reset password using the code sent via SMS
+    /// </summary>
+    [HttpPost("reset-password")]
+    [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(object), StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest request)
+    {
+        var command = new ResetPasswordCommand(
+            request.Email,
+            request.ResetCode,
+            request.NewPassword);
+
+        var result = await _mediator.Send(command);
+
+        if (result.IsFailure)
+        {
+            return BadRequest(new
+            {
+                error = result.Error.Code,
+                message = result.Error.Message
+            });
+        }
+
+        return Ok(new
+        {
+            message = result.Value
+        });
+    }
+
+    /// <summary>
+    /// Refresh access token using refresh token
+    /// </summary>
+    [HttpPost("refresh-token")]
+    [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(object), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(object), StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> RefreshToken([FromBody] RefreshTokenRequest request)
+    {
+        var command = new RefreshTokenCommand(
+            request.UserId,
+            request.RefreshToken);
+
+        var result = await _mediator.Send(command);
+
+        if (result.IsFailure)
+        {
+            // Return 401 for invalid/expired refresh tokens
+            if (result.Error.Code.Contains("RefreshToken") || result.Error.Code.Contains("User."))
             {
                 return Unauthorized(new
                 {

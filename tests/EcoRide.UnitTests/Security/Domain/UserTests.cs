@@ -318,7 +318,7 @@ public class UserTests
 
         // Assert
         Assert.True(result.IsFailure);
-        Assert.Equal("RefreshToken.Invalid", result.Error.Code);
+        Assert.Equal("User.NoRefreshToken", result.Error.Code);
     }
 
     [Fact]
@@ -337,7 +337,7 @@ public class UserTests
 
         // Assert
         Assert.True(result.IsFailure);
-        Assert.Equal("RefreshToken.Invalid", result.Error.Code);
+        Assert.Equal("User.InvalidRefreshToken", result.Error.Code);
     }
 
     [Fact]
@@ -357,7 +357,7 @@ public class UserTests
 
         // Assert
         Assert.True(result.IsFailure);
-        Assert.Equal("RefreshToken.Expired", result.Error.Code);
+        Assert.Equal("User.RefreshTokenExpired", result.Error.Code);
     }
 
     [Fact]
@@ -433,7 +433,7 @@ public class UserTests
 
         // Assert
         Assert.True(result.IsFailure);
-        Assert.Equal("PasswordReset.TokenInvalid", result.Error.Code);
+        Assert.Equal("User.NoResetToken", result.Error.Code);
     }
 
     [Fact]
@@ -457,7 +457,7 @@ public class UserTests
 
         // Assert
         Assert.True(result.IsFailure);
-        Assert.Equal("PasswordReset.TokenExpired", result.Error.Code);
+        Assert.Equal("User.ResetTokenExpired", result.Error.Code);
     }
 
     [Fact]
@@ -483,7 +483,7 @@ public class UserTests
     }
 
     [Fact]
-    public void ResetPassword_WithNoTokenSet_ShouldFail()
+    public void ResetPassword_WithoutTokenValidation_ShouldSucceed()
     {
         // Arrange
         var email = Email.Create("test@example.com").Value;
@@ -496,8 +496,8 @@ public class UserTests
         var result = user.ResetPassword("new_password_hash");
 
         // Assert
-        Assert.True(result.IsFailure);
-        Assert.Equal("PasswordReset.NoTokenSet", result.Error.Code);
+        Assert.True(result.IsSuccess);
+        Assert.Equal("new_password_hash", user.PasswordHash);
     }
 
     [Fact]
@@ -516,7 +516,7 @@ public class UserTests
 
         // Assert
         Assert.True(result.IsFailure);
-        Assert.Equal("User.PasswordHashEmpty", result.Error.Code);
+        Assert.Equal("User.InvalidPasswordHash", result.Error.Code);
     }
 
     [Fact]

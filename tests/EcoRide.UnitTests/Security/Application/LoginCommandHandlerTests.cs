@@ -99,7 +99,7 @@ public class LoginCommandHandlerTests
 
         // Assert
         Assert.True(result.IsFailure);
-        Assert.Equal("Email.InvalidFormat", result.Error.Code);
+        Assert.Equal("Email.Invalid", result.Error.Code);
     }
 
     [Fact]

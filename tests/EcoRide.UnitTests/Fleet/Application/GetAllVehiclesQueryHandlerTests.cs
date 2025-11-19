@@ -4,7 +4,6 @@ using EcoRide.Modules.Fleet.Domain.Enums;
 using EcoRide.Modules.Fleet.Domain.Repositories;
 using EcoRide.Modules.Fleet.Domain.ValueObjects;
 using Moq;
-using NetTopologySuite.Geometries;
 
 namespace EcoRide.UnitTests.Fleet.Application;
 
@@ -176,8 +175,7 @@ public class GetAllVehiclesQueryHandlerTests
 
         // Assert
         Assert.True(result.IsFailure);
-        Assert.Equal("Pagination.Invalid", result.Error.Code);
-        Assert.Contains("PageNumber", result.Error.Message);
+        Assert.Equal("Pagination.InvalidPageNumber", result.Error.Code);
     }
 
     [Fact]
@@ -191,7 +189,7 @@ public class GetAllVehiclesQueryHandlerTests
 
         // Assert
         Assert.True(result.IsFailure);
-        Assert.Equal("Pagination.Invalid", result.Error.Code);
+        Assert.Equal("Pagination.InvalidPageNumber", result.Error.Code);
     }
 
     [Fact]
@@ -205,8 +203,7 @@ public class GetAllVehiclesQueryHandlerTests
 
         // Assert
         Assert.True(result.IsFailure);
-        Assert.Equal("Pagination.Invalid", result.Error.Code);
-        Assert.Contains("PageSize", result.Error.Message);
+        Assert.Equal("Pagination.InvalidPageSize", result.Error.Code);
     }
 
     [Fact]
@@ -220,8 +217,7 @@ public class GetAllVehiclesQueryHandlerTests
 
         // Assert
         Assert.True(result.IsFailure);
-        Assert.Equal("Pagination.Invalid", result.Error.Code);
-        Assert.Contains("100", result.Error.Message);
+        Assert.Equal("Pagination.InvalidPageSize", result.Error.Code);
     }
 
     [Fact]
@@ -263,12 +259,12 @@ public class GetAllVehiclesQueryHandlerTests
         Assert.True(result.IsSuccess);
         var dto = result.Value.Vehicles[0];
         Assert.Equal(vehicle.Id, dto.Id);
-        Assert.Equal(vehicle.QRCode.Code, dto.QRCode);
+        Assert.Equal(vehicle.Code, dto.Code);
         Assert.Equal(vehicle.Status.ToString(), dto.Status);
         Assert.Equal(vehicle.Type.ToString(), dto.Type);
         Assert.Equal(vehicle.BatteryLevel.Value, dto.BatteryLevel);
-        Assert.NotNull(dto.Location);
-        Assert.NotNull(dto.PricePerMinute);
+        Assert.NotEqual(0, dto.Latitude);
+        Assert.NotEqual(0, dto.Longitude);
     }
 
     [Fact]
@@ -299,21 +295,21 @@ public class GetAllVehiclesQueryHandlerTests
         int batteryLevel = 100)
     {
         var vehicles = new List<Vehicle>();
-        var geometryFactory = new GeometryFactory(new PrecisionModel(), 4326);
 
         for (int i = 0; i < count; i++)
         {
-            var qrCode = Domain.ValueObjects.QRCode.Create($"QR{i:D6}").Value;
-            var location = new Location(geometryFactory.CreatePoint(new Coordinate(-7.5898 + i * 0.001, 33.5731 + i * 0.001)));
+            var code = $"VEH{i:D6}";
+            var location = EcoRide.Modules.Fleet.Domain.ValueObjects.Location.Create(
+                33.5731 + i * 0.001,  // latitude
+                -7.5898 + i * 0.001   // longitude
+            ).Value;
             var battery = BatteryLevel.Create(batteryLevel).Value;
-            var pricePerMinute = Money.Create(2.50m, "MAD").Value;
 
-            var vehicle = Vehicle.Create(qrCode, location, type, battery, pricePerMinute).Value;
+            var vehicle = Vehicle.Create(code, type, battery, location).Value;
 
-            // Set status using reflection if needed, or if there's a method to change status
+            // Set status using reflection if needed
             if (status != VehicleStatus.Available)
             {
-                // Assuming we need to use reflection since status might not have public setters
                 typeof(Vehicle)
                     .GetProperty(nameof(Vehicle.Status))!
                     .SetValue(vehicle, status);
