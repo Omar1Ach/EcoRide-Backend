@@ -34,7 +34,11 @@ public static class DependencyInjection
 
         // Register services
         services.AddScoped<IPasswordHasher, BcryptPasswordHasher>();
-        services.AddScoped<ISmsService, TwilioSmsService>();
+
+        // Use MockSmsService for development (prints OTP to console)
+        // To use real SMS, change to: services.AddScoped<ISmsService, TwilioSmsService>();
+        services.AddScoped<ISmsService, MockSmsService>();
+
         services.AddScoped<IJwtTokenGenerator, JwtTokenGenerator>();
 
         return services;
