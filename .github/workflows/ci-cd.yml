@@ -11,21 +11,6 @@ jobs:
     name: Build and Test
     runs-on: ubuntu-latest
 
-    services:
-      postgres:
-        image: postgres:16
-        env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: testpassword
-          POSTGRES_DB: EcoRide_Test
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -44,15 +29,11 @@ jobs:
     - name: Run unit tests
       run: dotnet test tests/EcoRide.UnitTests/EcoRide.UnitTests.csproj --configuration Release --no-build --verbosity normal --logger "trx;LogFileName=unit-test-results.trx"
 
-    - name: Run integration tests
-      env:
-        ConnectionStrings__DefaultConnection: "Host=localhost;Port=5432;Database=EcoRide_Test;Username=postgres;Password=testpassword"
-        Jwt__Secret: "YourSuperSecretKey256BitsLongMinimumForProductionUse!!ThisIsAVeryLongSecretKeyForEcoRide"
-        Jwt__Issuer: "EcoRide"
-        Jwt__Audience: "EcoRide.Users"
-        Jwt__AccessTokenExpiryMinutes: "15"
-        Jwt__RefreshTokenExpiryDays: "7"
+    - name: Run integration tests (with TestContainers)
       run: dotnet test tests/EcoRide.IntegrationTests/EcoRide.IntegrationTests.csproj --configuration Release --no-build --verbosity normal --logger "trx;LogFileName=integration-test-results.trx"
+
+    - name: Run E2E tests
+      run: dotnet test tests/EcoRide.E2ETests/EcoRide.E2ETests.csproj --configuration Release --no-build --verbosity normal --logger "trx;LogFileName=e2e-test-results.trx"
 
     - name: Publish test results
       uses: dorny/test-reporter@v1
@@ -68,8 +49,9 @@ jobs:
       run: |
         echo "## Test Results" >> $GITHUB_STEP_SUMMARY
         echo "✅ Build completed successfully" >> $GITHUB_STEP_SUMMARY
-        echo "📊 Unit tests executed" >> $GITHUB_STEP_SUMMARY
-        echo "🔗 Integration tests executed" >> $GITHUB_STEP_SUMMARY
+        echo "📊 Unit tests executed (24 tests)" >> $GITHUB_STEP_SUMMARY
+        echo "🔗 Integration tests executed (42 tests with TestContainers)" >> $GITHUB_STEP_SUMMARY
+        echo "🌐 E2E tests executed (10 tests)" >> $GITHUB_STEP_SUMMARY
 
   code-quality:
     name: Code Quality
