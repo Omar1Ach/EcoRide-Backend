@@ -18,7 +18,11 @@ public sealed class WalletTransaction : Entity<Guid>
     public DateTime CreatedAt { get; private set; }
 
     // EF Core constructor
-    private WalletTransaction() { }
+    private WalletTransaction()
+    {
+        TransactionType = string.Empty;
+        PaymentMethod = string.Empty;
+    }
 
     private WalletTransaction(
         Guid id,
