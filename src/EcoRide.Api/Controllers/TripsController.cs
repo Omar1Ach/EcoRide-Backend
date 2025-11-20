@@ -3,7 +3,9 @@ using EcoRide.Modules.Trip.Application.Commands.RateTrip;
 using EcoRide.Modules.Trip.Application.Commands.StartTrip;
 using EcoRide.Modules.Trip.Application.DTOs;
 using EcoRide.Modules.Trip.Application.Queries.GetActiveTripStats;
+using EcoRide.Modules.Trip.Application.Queries.GetTripById;
 using EcoRide.Modules.Trip.Application.Queries.GetTripHistory;
+using EcoRide.Modules.Trip.Application.Queries.GetTripReceipt;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
@@ -98,6 +100,52 @@ public class TripsController : ControllerBase
         if (result.IsFailure)
         {
             return BadRequest(new { error = result.Error.Message, code = result.Error.Code });
+        }
+
+        return Ok(result.Value);
+    }
+
+    /// <summary>
+    /// Get detailed trip information by ID
+    /// US-007: Trip History - View trip details
+    /// </summary>
+    [HttpGet("{tripId}")]
+    public async Task<IActionResult> GetTripById(
+        [FromRoute] Guid tripId,
+        [FromQuery] Guid userId,
+        CancellationToken cancellationToken)
+    {
+        var query = new GetTripByIdQuery(tripId, userId);
+        var result = await _sender.Send(query, cancellationToken);
+
+        if (result.IsFailure)
+        {
+            return result.Error.Code == "Trip.NotFound"
+                ? NotFound(new { error = result.Error.Message, code = result.Error.Code })
+                : BadRequest(new { error = result.Error.Message, code = result.Error.Code });
+        }
+
+        return Ok(result.Value);
+    }
+
+    /// <summary>
+    /// Get trip receipt for viewing/downloading
+    /// US-007: Trip History - View receipt
+    /// </summary>
+    [HttpGet("{tripId}/receipt")]
+    public async Task<IActionResult> GetTripReceipt(
+        [FromRoute] Guid tripId,
+        [FromQuery] Guid userId,
+        CancellationToken cancellationToken)
+    {
+        var query = new GetTripReceiptQuery(tripId, userId);
+        var result = await _sender.Send(query, cancellationToken);
+
+        if (result.IsFailure)
+        {
+            return result.Error.Code == "Trip.NotFound" || result.Error.Code == "Receipt.NotFound"
+                ? NotFound(new { error = result.Error.Message, code = result.Error.Code })
+                : BadRequest(new { error = result.Error.Message, code = result.Error.Code });
         }
 
         return Ok(result.Value);

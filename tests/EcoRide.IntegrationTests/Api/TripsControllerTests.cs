@@ -392,4 +392,62 @@ public class TripsControllerTests : IClassFixture<IntegrationTestWebAppFactory>
         Assert.True(response.StatusCode == HttpStatusCode.BadRequest ||
                    response.StatusCode == HttpStatusCode.NotFound);
     }
+
+    // US-007: Trip Details Integration Tests
+
+    [Fact]
+    public async Task GetTripById_WithNonExistentTrip_ShouldReturn404()
+    {
+        // Arrange
+        var tripId = Guid.NewGuid();
+        var userId = Guid.NewGuid();
+
+        // Act
+        var response = await _client.GetAsync($"/api/trips/{tripId}?userId={userId}");
+
+        // Assert
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task GetTripReceipt_WithNonExistentTrip_ShouldReturn404()
+    {
+        // Arrange
+        var tripId = Guid.NewGuid();
+        var userId = Guid.NewGuid();
+
+        // Act
+        var response = await _client.GetAsync($"/api/trips/{tripId}/receipt?userId={userId}");
+
+        // Assert
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task GetTripById_WithEmptyTripId_ShouldReturn404OrBadRequest()
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+
+        // Act
+        var response = await _client.GetAsync($"/api/trips/{Guid.Empty}?userId={userId}");
+
+        // Assert
+        Assert.True(response.StatusCode == HttpStatusCode.BadRequest ||
+                   response.StatusCode == HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task GetTripReceipt_WithEmptyTripId_ShouldReturn404OrBadRequest()
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+
+        // Act
+        var response = await _client.GetAsync($"/api/trips/{Guid.Empty}/receipt?userId={userId}");
+
+        // Assert
+        Assert.True(response.StatusCode == HttpStatusCode.BadRequest ||
+                   response.StatusCode == HttpStatusCode.NotFound);
+    }
 }
