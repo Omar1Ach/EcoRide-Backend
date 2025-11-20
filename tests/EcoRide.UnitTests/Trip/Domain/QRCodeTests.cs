@@ -32,7 +32,7 @@ public class QRCodeTests
     public void Create_WithEmptyCode_ShouldFail(string? code)
     {
         // Act
-        var result = QRCode.Create(code);
+        var result = QRCode.Create(code!);
 
         // Assert
         Assert.True(result.IsFailure);

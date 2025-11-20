@@ -51,6 +51,17 @@ jobs:
     - name: Run integration tests (with TestContainers)
       run: dotnet test tests/EcoRide.IntegrationTests/EcoRide.IntegrationTests.csproj --configuration Release --no-build --verbosity normal --logger "trx;LogFileName=integration-test-results.trx"
 
+    - name: Install EF Core tools
+      run: dotnet tool install --global dotnet-ef
+
+    - name: Apply database migrations
+      env:
+        ConnectionStrings__DefaultConnection: "Host=127.0.0.1;Port=5432;Database=ecoride_test;Username=postgres;Password=postgres"
+      run: |
+        dotnet ef database update --project src/Modules/Security/EcoRide.Modules.Security --startup-project src/EcoRide.Api --no-build --configuration Release
+        dotnet ef database update --project src/Modules/Fleet/EcoRide.Modules.Fleet --startup-project src/EcoRide.Api --no-build --configuration Release
+        dotnet ef database update --project src/Modules/Trip/EcoRide.Modules.Trip --startup-project src/EcoRide.Api --no-build --configuration Release
+
     - name: Run E2E tests
       env:
         ConnectionStrings__DefaultConnection: "Host=127.0.0.1;Port=5432;Database=ecoride_test;Username=postgres;Password=postgres"
