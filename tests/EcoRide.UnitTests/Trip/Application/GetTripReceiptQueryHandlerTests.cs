@@ -158,7 +158,7 @@ public class GetTripReceiptQueryHandlerTests
         // Assert
         Assert.True(result.IsSuccess);
         Assert.NotNull(result.Value.ReceiptNumber);
-        Assert.True(result.Value.ReceiptNumber.StartsWith("RCP-"));
+        Assert.StartsWith("RCP-", result.Value.ReceiptNumber);
         Assert.Equal("ECO-SCTR-001", result.Value.VehicleCode);
         Assert.Equal(18, result.Value.DurationMinutes);
         Assert.Equal(1800, result.Value.DistanceMeters);
