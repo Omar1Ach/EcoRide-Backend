@@ -55,12 +55,10 @@ jobs:
       run: dotnet tool install --global dotnet-ef --version 9.*
 
     - name: Apply database migrations
-      env:
-        ConnectionStrings__DefaultConnection: "Host=127.0.0.1;Port=5432;Database=ecoride_test;Username=postgres;Password=postgres"
       run: |
-        dotnet ef database update --project src/Modules/Security/EcoRide.Modules.Security --startup-project src/EcoRide.Api --configuration Release
-        dotnet ef database update --project src/Modules/Fleet/EcoRide.Modules.Fleet --startup-project src/EcoRide.Api --configuration Release
-        dotnet ef database update --project src/Modules/Trip/EcoRide.Modules.Trip --startup-project src/EcoRide.Api --configuration Release
+        dotnet ef database update --project src/Modules/Security/EcoRide.Modules.Security --startup-project src/EcoRide.Api --configuration Release --connection "Host=127.0.0.1;Port=5432;Database=ecoride_test;Username=postgres;Password=postgres"
+        dotnet ef database update --project src/Modules/Fleet/EcoRide.Modules.Fleet --startup-project src/EcoRide.Api --configuration Release --connection "Host=127.0.0.1;Port=5432;Database=ecoride_test;Username=postgres;Password=postgres"
+        dotnet ef database update --project src/Modules/Trip/EcoRide.Modules.Trip --startup-project src/EcoRide.Api --configuration Release --connection "Host=127.0.0.1;Port=5432;Database=ecoride_test;Username=postgres;Password=postgres"
 
     - name: Run E2E tests
       env:
