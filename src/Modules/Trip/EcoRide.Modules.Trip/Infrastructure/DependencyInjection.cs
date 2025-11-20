@@ -15,18 +15,28 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddTripInfrastructure(
         this IServiceCollection services,
-        IConfiguration configuration)
+        IConfiguration configuration,
+        Action<DbContextOptionsBuilder>? dbContextOptions = null)
     {
-        // Database
-        services.AddDbContext<TripDbContext>(options =>
+        // Add DbContext
+        if (dbContextOptions != null)
         {
-            options.UseNpgsql(
-                configuration.GetConnectionString("DefaultConnection"),
-                npgsqlOptions =>
-                {
-                    npgsqlOptions.MigrationsHistoryTable("__EFMigrationsHistory", "trip");
-                });
-        });
+            // Use custom database provider (for testing)
+            services.AddDbContext<TripDbContext>(dbContextOptions);
+        }
+        else
+        {
+            // Use PostgreSQL for production
+            services.AddDbContext<TripDbContext>(options =>
+            {
+                options.UseNpgsql(
+                    configuration.GetConnectionString("DefaultConnection"),
+                    npgsqlOptions =>
+                    {
+                        npgsqlOptions.MigrationsHistoryTable("__EFMigrationsHistory", "trip");
+                    });
+            });
+        }
 
         // Repositories
         services.AddScoped<IReservationRepository, ReservationRepository>();

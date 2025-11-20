@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Json;
 using EcoRide.IntegrationTests.Infrastructure;
 using EcoRide.Modules.Trip.Application.DTOs;
+using EmergencyContactsDto = EcoRide.Modules.Trip.Application.DTOs.EmergencyContactsDto;
 
 namespace EcoRide.IntegrationTests.Api;
 
@@ -132,9 +133,11 @@ public class TripsControllerTests : IClassFixture<IntegrationTestWebAppFactory>
         // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
-        var result = await response.Content.ReadFromJsonAsync<List<EmergencyContact>>();
+        var result = await response.Content.ReadFromJsonAsync<EmergencyContactsDto>();
         Assert.NotNull(result);
-        Assert.NotEmpty(result);
+        Assert.NotNull(result.SupportPhone);
+        Assert.NotNull(result.EmergencyPhone);
+        Assert.NotNull(result.PolicePhone);
     }
 
     [Fact]
@@ -273,8 +276,3 @@ public class TripsControllerTests : IClassFixture<IntegrationTestWebAppFactory>
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 }
-
-/// <summary>
-/// Emergency contact DTO for deserialization
-/// </summary>
-public record EmergencyContact(string Name, string Number, string Description);

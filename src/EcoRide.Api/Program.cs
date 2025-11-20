@@ -100,9 +100,13 @@ builder.Services.AddApplication(
     typeof(EcoRide.Modules.Trip.Application.Commands.CreateReservation.CreateReservationCommand).Assembly);
 
 // Add Infrastructure layer (DbContext, Repositories, Services)
-builder.Services.AddSecurityInfrastructure(builder.Configuration);
-builder.Services.AddFleetInfrastructure(builder.Configuration);
-builder.Services.AddTripInfrastructure(builder.Configuration);
+// Skip in Testing environment - test factory will configure infrastructure
+if (!builder.Environment.IsEnvironment("Testing"))
+{
+    builder.Services.AddSecurityInfrastructure(builder.Configuration);
+    builder.Services.AddFleetInfrastructure(builder.Configuration);
+    builder.Services.AddTripInfrastructure(builder.Configuration);
+}
 
 var app = builder.Build();
 
@@ -127,3 +131,6 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.Run();
+
+// Make Program class accessible for integration tests
+public partial class Program { }

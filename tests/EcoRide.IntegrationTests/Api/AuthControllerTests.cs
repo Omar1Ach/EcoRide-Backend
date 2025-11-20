@@ -3,6 +3,8 @@ using System.Net.Http.Json;
 using EcoRide.IntegrationTests.Infrastructure;
 using EcoRide.Api.Models.Auth;
 using EcoRide.Modules.Security.Application.DTOs;
+using RegisterRequest = EcoRide.Api.Models.Auth.RegisterUserRequest;
+using RegisterResponse = EcoRide.Modules.Security.Application.DTOs.RegisterUserResponse;
 
 namespace EcoRide.IntegrationTests.Api;
 
@@ -25,39 +27,41 @@ public class AuthControllerTests : IClassFixture<IntegrationTestWebAppFactory>
     public async Task RegisterUser_WithValidData_ShouldReturn200()
     {
         // Arrange
+        var random = new Random();
+        var uniqueId = string.Concat(Enumerable.Range(0, 8).Select(_ => random.Next(0, 10))); // Generate 8 numeric digits
         var request = new RegisterRequest(
             Email: $"test{Guid.NewGuid()}@ecoride.ma",
             Password: "Test@123456",
-            PhoneNumber: "+212600000001",
+            PhoneNumber: $"+2126{uniqueId}",
             FullName: "Test User"
         );
 
         // Act
-        var response = await _client.PostAsJsonAsync("/api/auth/register", request);
+        var response = await _client.PostAsJsonAsync("/api/auth/signup", request);
 
         // Assert
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
 
         var result = await response.Content.ReadFromJsonAsync<RegisterResponse>();
         Assert.NotNull(result);
         Assert.NotEqual(Guid.Empty, result.UserId);
-        Assert.Equal(request.Email, result.Email);
-        Assert.False(result.IsVerified);
+        Assert.NotNull(result.Message);
     }
 
     [Fact]
     public async Task RegisterUser_WithInvalidEmail_ShouldReturn400()
     {
         // Arrange
+        var uniqueId = Guid.NewGuid().ToString("N").Substring(0, 8);
         var request = new RegisterRequest(
             Email: "invalid-email",
             Password: "Test@123456",
-            PhoneNumber: "+212600000001",
+            PhoneNumber: $"+2126{uniqueId}",
             FullName: "Test User"
         );
 
         // Act
-        var response = await _client.PostAsJsonAsync("/api/auth/register", request);
+        var response = await _client.PostAsJsonAsync("/api/auth/signup", request);
 
         // Assert
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
@@ -67,15 +71,16 @@ public class AuthControllerTests : IClassFixture<IntegrationTestWebAppFactory>
     public async Task RegisterUser_WithShortPassword_ShouldReturn400()
     {
         // Arrange
+        var uniqueId = Guid.NewGuid().ToString("N").Substring(0, 8);
         var request = new RegisterRequest(
             Email: $"test{Guid.NewGuid()}@ecoride.ma",
             Password: "123",
-            PhoneNumber: "+212600000001",
+            PhoneNumber: $"+2126{uniqueId}",
             FullName: "Test User"
         );
 
         // Act
-        var response = await _client.PostAsJsonAsync("/api/auth/register", request);
+        var response = await _client.PostAsJsonAsync("/api/auth/signup", request);
 
         // Assert
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
@@ -93,7 +98,7 @@ public class AuthControllerTests : IClassFixture<IntegrationTestWebAppFactory>
         );
 
         // Act
-        var response = await _client.PostAsJsonAsync("/api/auth/register", request);
+        var response = await _client.PostAsJsonAsync("/api/auth/signup", request);
 
         // Assert
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
@@ -104,22 +109,24 @@ public class AuthControllerTests : IClassFixture<IntegrationTestWebAppFactory>
     {
         // Arrange
         var email = $"duplicate{Guid.NewGuid()}@ecoride.ma";
+        var uniqueId1 = Guid.NewGuid().ToString("N").Substring(0, 9);
+        var uniqueId2 = Guid.NewGuid().ToString("N").Substring(0, 9);
         var request1 = new RegisterRequest(
             Email: email,
             Password: "Test@123456",
-            PhoneNumber: "+212600000001",
+            PhoneNumber: $"+2126{uniqueId1}",
             FullName: "Test User 1"
         );
         var request2 = new RegisterRequest(
             Email: email,
             Password: "Test@123456",
-            PhoneNumber: "+212600000002",
+            PhoneNumber: $"+2126{uniqueId2}",
             FullName: "Test User 2"
         );
 
         // Act
-        await _client.PostAsJsonAsync("/api/auth/register", request1);
-        var response2 = await _client.PostAsJsonAsync("/api/auth/register", request2);
+        await _client.PostAsJsonAsync("/api/auth/signup", request1);
+        var response2 = await _client.PostAsJsonAsync("/api/auth/signup", request2);
 
         // Assert
         Assert.Equal(HttpStatusCode.BadRequest, response2.StatusCode);
@@ -129,22 +136,24 @@ public class AuthControllerTests : IClassFixture<IntegrationTestWebAppFactory>
     public async Task VerifyOtp_WithValidCode_ShouldReturn200()
     {
         // Arrange - First register a user
+        var uniqueId = Guid.NewGuid().ToString("N").Substring(0, 8);
+        var phoneNumber = $"+2126{uniqueId}";
         var registerRequest = new RegisterRequest(
             Email: $"verify{Guid.NewGuid()}@ecoride.ma",
             Password: "Test@123456",
-            PhoneNumber: "+212600000001",
+            PhoneNumber: phoneNumber,
             FullName: "Verify Test"
         );
 
-        var registerResponse = await _client.PostAsJsonAsync("/api/auth/register", registerRequest);
+        var registerResponse = await _client.PostAsJsonAsync("/api/auth/signup", registerRequest);
         var registerResult = await registerResponse.Content.ReadFromJsonAsync<RegisterResponse>();
 
         // In a real scenario, we'd get the OTP from SMS
         // For testing, we'll need to access the database or mock the OTP service
         // For now, we'll just test the endpoint structure
         var verifyRequest = new VerifyOtpRequest(
-            UserId: registerResult!.UserId,
-            OtpCode: "123456" // This will fail but tests the endpoint
+            PhoneNumber: phoneNumber,
+            Code: "123456" // This will fail but tests the endpoint
         );
 
         // Act
@@ -161,14 +170,15 @@ public class AuthControllerTests : IClassFixture<IntegrationTestWebAppFactory>
         // Arrange - Register and verify user first
         var email = $"login{Guid.NewGuid()}@ecoride.ma";
         var password = "Test@123456";
+        var uniqueId = Guid.NewGuid().ToString("N").Substring(0, 8);
         var registerRequest = new RegisterRequest(
             Email: email,
             Password: password,
-            PhoneNumber: "+212600000001",
+            PhoneNumber: $"+2126{uniqueId}",
             FullName: "Login Test"
         );
 
-        await _client.PostAsJsonAsync("/api/auth/register", registerRequest);
+        await _client.PostAsJsonAsync("/api/auth/signup", registerRequest);
 
         var loginRequest = new LoginRequest(
             Email: email,
@@ -181,7 +191,7 @@ public class AuthControllerTests : IClassFixture<IntegrationTestWebAppFactory>
 
         // Assert
         Assert.True(response.StatusCode == HttpStatusCode.OK ||
-                    response.StatusCode == HttpStatusCode.BadRequest); // May fail if user needs verification
+                    response.StatusCode == HttpStatusCode.Unauthorized); // May fail if user needs verification
     }
 
     [Fact]
@@ -198,7 +208,7 @@ public class AuthControllerTests : IClassFixture<IntegrationTestWebAppFactory>
         var response = await _client.PostAsJsonAsync("/api/auth/login", loginRequest);
 
         // Assert
-        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 
     [Fact]
@@ -206,14 +216,15 @@ public class AuthControllerTests : IClassFixture<IntegrationTestWebAppFactory>
     {
         // Arrange - Register user first
         var email = $"wrongpass{Guid.NewGuid()}@ecoride.ma";
+        var uniqueId = Guid.NewGuid().ToString("N").Substring(0, 8);
         var registerRequest = new RegisterRequest(
             Email: email,
             Password: "Test@123456",
-            PhoneNumber: "+212600000001",
+            PhoneNumber: $"+2126{uniqueId}",
             FullName: "Wrong Pass Test"
         );
 
-        await _client.PostAsJsonAsync("/api/auth/register", registerRequest);
+        await _client.PostAsJsonAsync("/api/auth/signup", registerRequest);
 
         var loginRequest = new LoginRequest(
             Email: email,
@@ -225,7 +236,7 @@ public class AuthControllerTests : IClassFixture<IntegrationTestWebAppFactory>
         var response = await _client.PostAsJsonAsync("/api/auth/login", loginRequest);
 
         // Assert
-        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 
     [Fact]
@@ -233,14 +244,15 @@ public class AuthControllerTests : IClassFixture<IntegrationTestWebAppFactory>
     {
         // Arrange - Register user first
         var email = $"forgot{Guid.NewGuid()}@ecoride.ma";
+        var uniqueId = Guid.NewGuid().ToString("N").Substring(0, 8);
         var registerRequest = new RegisterRequest(
             Email: email,
             Password: "Test@123456",
-            PhoneNumber: "+212600000001",
+            PhoneNumber: $"+2126{uniqueId}",
             FullName: "Forgot Test"
         );
 
-        await _client.PostAsJsonAsync("/api/auth/register", registerRequest);
+        await _client.PostAsJsonAsync("/api/auth/signup", registerRequest);
 
         var forgotRequest = new ForgotPasswordRequest(Email: email);
 
@@ -294,6 +306,6 @@ public class AuthControllerTests : IClassFixture<IntegrationTestWebAppFactory>
         var response = await _client.PostAsJsonAsync("/api/auth/refresh-token", refreshRequest);
 
         // Assert
-        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 }
