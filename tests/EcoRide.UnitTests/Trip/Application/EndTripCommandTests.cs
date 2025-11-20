@@ -1,4 +1,6 @@
 using EcoRide.BuildingBlocks.Application.Data;
+using EcoRide.BuildingBlocks.Application.Services;
+using EcoRide.BuildingBlocks.Domain;
 using EcoRide.Modules.Fleet.Domain.Aggregates;
 using EcoRide.Modules.Fleet.Domain.Enums;
 using EcoRide.Modules.Fleet.Domain.Repositories;
@@ -24,6 +26,8 @@ public class EndTripCommandTests
     private readonly Mock<IActiveTripRepository> _mockTripRepository;
     private readonly Mock<IVehicleRepository> _mockVehicleRepository;
     private readonly Mock<IUserRepository> _mockUserRepository;
+    private readonly Mock<IReceiptRepository> _mockReceiptRepository;
+    private readonly Mock<IPaymentService> _mockPaymentService;
     private readonly Mock<IUnitOfWork> _mockUnitOfWork;
     private readonly EndTripCommandHandler _handler;
 
@@ -32,11 +36,15 @@ public class EndTripCommandTests
         _mockTripRepository = new Mock<IActiveTripRepository>();
         _mockVehicleRepository = new Mock<IVehicleRepository>();
         _mockUserRepository = new Mock<IUserRepository>();
+        _mockReceiptRepository = new Mock<IReceiptRepository>();
+        _mockPaymentService = new Mock<IPaymentService>();
         _mockUnitOfWork = new Mock<IUnitOfWork>();
         _handler = new EndTripCommandHandler(
             _mockTripRepository.Object,
             _mockVehicleRepository.Object,
             _mockUserRepository.Object,
+            _mockReceiptRepository.Object,
+            _mockPaymentService.Object,
             _mockUnitOfWork.Object);
     }
 
@@ -86,6 +94,17 @@ public class EndTripCommandTests
 
         _mockUserRepository.Setup(x => x.GetByIdAsync(userId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(user);
+
+        // Mock payment service - wallet payment with actual deduction
+        _mockPaymentService.Setup(x => x.ProcessTripPaymentAsync(
+            userId,
+            It.IsAny<decimal>(),
+            It.IsAny<CancellationToken>()))
+            .Callback<Guid, decimal, CancellationToken>((uid, amount, ct) => user.DeductFromWallet(amount))
+            .ReturnsAsync(Result.Success(new PaymentResult(
+                EcoRide.BuildingBlocks.Application.Services.PaymentMethod.Wallet,
+                "Paid from Wallet",
+                32m)));
 
         // Act
         var result = await _handler.Handle(command, CancellationToken.None);
@@ -175,6 +194,17 @@ public class EndTripCommandTests
         _mockUserRepository.Setup(x => x.GetByIdAsync(userId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(user);
 
+        // Mock payment service - wallet payment with actual deduction
+        _mockPaymentService.Setup(x => x.ProcessTripPaymentAsync(
+            userId,
+            It.IsAny<decimal>(),
+            It.IsAny<CancellationToken>()))
+            .Callback<Guid, decimal, CancellationToken>((uid, amount, ct) => user.DeductFromWallet(amount))
+            .ReturnsAsync(Result.Success(new PaymentResult(
+                EcoRide.BuildingBlocks.Application.Services.PaymentMethod.Wallet,
+                "Paid from Wallet",
+                32m)));
+
         // Act
         var result = await _handler.Handle(command, CancellationToken.None);
 
@@ -232,18 +262,23 @@ public class EndTripCommandTests
         _mockUserRepository.Setup(x => x.GetByIdAsync(userId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(user);
 
+        // Mock payment service - return failure (insufficient funds, no credit card)
+        _mockPaymentService.Setup(x => x.ProcessTripPaymentAsync(
+            userId,
+            It.IsAny<decimal>(),
+            It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Failure<PaymentResult>(new Error(
+                "Payment.NoPaymentMethod",
+                "No default payment method found. Please add a credit card.")));
+
         // Act
         var result = await _handler.Handle(command, CancellationToken.None);
 
         // Assert
         Assert.True(result.IsFailure);
-        Assert.Equal("User.InsufficientFunds", result.Error.Code);
-        Assert.Contains("Insufficient wallet balance", result.Error.Message);
-        Assert.Contains("Available: 10 MAD", result.Error.Message);
-        Assert.Contains("Required: 32 MAD", result.Error.Message);
+        Assert.Equal("Payment.NoPaymentMethod", result.Error.Code);
 
-        // Verify trip was NOT completed (End was called but rolled back)
-        // Verify changes were NOT saved
+        // Verify changes were NOT saved (payment failed)
         _mockUnitOfWork.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 
@@ -375,6 +410,17 @@ public class EndTripCommandTests
 
         _mockUserRepository.Setup(x => x.GetByIdAsync(userId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(user);
+
+        // Mock payment service - wallet payment with actual deduction
+        _mockPaymentService.Setup(x => x.ProcessTripPaymentAsync(
+            userId,
+            It.IsAny<decimal>(),
+            It.IsAny<CancellationToken>()))
+            .Callback<Guid, decimal, CancellationToken>((uid, amount, ct) => user.DeductFromWallet(amount))
+            .ReturnsAsync(Result.Success(new PaymentResult(
+                EcoRide.BuildingBlocks.Application.Services.PaymentMethod.Wallet,
+                "Paid from Wallet",
+                7m)));
 
         // Act
         var result = await _handler.Handle(command, CancellationToken.None);

@@ -1,3 +1,4 @@
+using EcoRide.BuildingBlocks.Application.Services;
 using EcoRide.Modules.Security.Application.Data;
 using EcoRide.Modules.Security.Application.Services;
 using EcoRide.Modules.Security.Domain.Repositories;
@@ -42,6 +43,7 @@ public static class DependencyInjection
         // Register repositories
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IOtpRepository, OtpRepository>();
+        services.AddScoped<IPaymentMethodRepository, PaymentMethodRepository>();
 
         // Register services
         services.AddScoped<IPasswordHasher, BcryptPasswordHasher>();
@@ -51,6 +53,9 @@ public static class DependencyInjection
         services.AddScoped<ISmsService, MockSmsService>();
 
         services.AddScoped<IJwtTokenGenerator, JwtTokenGenerator>();
+
+        // Register payment service (US-006: Credit card fallback and retry logic)
+        services.AddScoped<IPaymentService, PaymentService>();
 
         return services;
     }

@@ -68,6 +68,17 @@ public sealed class ActiveTripConfiguration : IEntityTypeConfiguration<ActiveTri
             .HasColumnName("duration_minutes")
             .IsRequired();
 
+        // Rating fields (US-006: Trip rating feature)
+        builder.Property(t => t.RatingStars)
+            .HasColumnName("rating_stars");
+
+        builder.Property(t => t.RatingComment)
+            .HasColumnName("rating_comment")
+            .HasMaxLength(500);
+
+        builder.Property(t => t.RatedAt)
+            .HasColumnName("rated_at");
+
         builder.Property(t => t.CreatedAt)
             .HasColumnName("created_at")
             .IsRequired();

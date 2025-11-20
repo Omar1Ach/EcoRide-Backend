@@ -1,4 +1,5 @@
 using EcoRide.Modules.Trip.Application.Commands.EndTrip;
+using EcoRide.Modules.Trip.Application.Commands.RateTrip;
 using EcoRide.Modules.Trip.Application.Commands.StartTrip;
 using EcoRide.Modules.Trip.Application.DTOs;
 using EcoRide.Modules.Trip.Application.Queries.GetActiveTripStats;
@@ -125,6 +126,31 @@ public class TripsController : ControllerBase
 
         return Ok(result.Value);
     }
+
+    /// <summary>
+    /// Rate a completed trip (US-006: Trip rating feature)
+    /// </summary>
+    [HttpPost("{tripId}/rate")]
+    public async Task<IActionResult> RateTrip(
+        [FromRoute] Guid tripId,
+        [FromBody] RateTripRequest request,
+        CancellationToken cancellationToken)
+    {
+        var command = new RateTripCommand(
+            tripId,
+            request.UserId,
+            request.Stars,
+            request.Comment);
+
+        var result = await _sender.Send(command, cancellationToken);
+
+        if (result.IsFailure)
+        {
+            return BadRequest(new { error = result.Error.Message, code = result.Error.Code });
+        }
+
+        return Ok(new { message = "Trip rated successfully" });
+    }
 }
 
 /// <summary>
@@ -143,3 +169,11 @@ public sealed record EndTripRequest(
     Guid UserId,
     double EndLatitude,
     double EndLongitude);
+
+/// <summary>
+/// Request model for rating a trip
+/// </summary>
+public sealed record RateTripRequest(
+    Guid UserId,
+    int Stars,
+    string? Comment = null);
