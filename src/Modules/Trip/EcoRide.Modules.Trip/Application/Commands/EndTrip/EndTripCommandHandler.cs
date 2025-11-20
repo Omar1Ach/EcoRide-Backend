@@ -1,5 +1,6 @@
 using EcoRide.BuildingBlocks.Application.Data;
 using EcoRide.BuildingBlocks.Application.Messaging;
+using EcoRide.BuildingBlocks.Application.Services;
 using EcoRide.BuildingBlocks.Domain;
 using EcoRide.Modules.Fleet.Domain.Enums;
 using EcoRide.Modules.Fleet.Domain.Repositories;
@@ -20,17 +21,23 @@ public sealed class EndTripCommandHandler : ICommandHandler<EndTripCommand, Trip
     private readonly IActiveTripRepository _tripRepository;
     private readonly IVehicleRepository _vehicleRepository;
     private readonly IUserRepository _userRepository;
+    private readonly IReceiptRepository _receiptRepository;
+    private readonly IPaymentService _paymentService;
     private readonly IUnitOfWork _unitOfWork;
 
     public EndTripCommandHandler(
         IActiveTripRepository tripRepository,
         IVehicleRepository vehicleRepository,
         IUserRepository userRepository,
+        IReceiptRepository receiptRepository,
+        IPaymentService paymentService,
         IUnitOfWork unitOfWork)
     {
         _tripRepository = tripRepository;
         _vehicleRepository = vehicleRepository;
         _userRepository = userRepository;
+        _receiptRepository = receiptRepository;
+        _paymentService = paymentService;
         _unitOfWork = unitOfWork;
     }
 
@@ -81,12 +88,18 @@ public sealed class EndTripCommandHandler : ICommandHandler<EndTripCommand, Trip
             return Result.Failure<TripSummaryDto>(endResult.Error);
         }
 
-        // Process payment (BR-005: Deduct from wallet)
-        var paymentResult = user.DeductFromWallet(trip.TotalCost);
+        // Process payment with wallet/credit card fallback and retry logic (TC-053, TC-054)
+        var paymentResult = await _paymentService.ProcessTripPaymentAsync(
+            request.UserId,
+            trip.TotalCost,
+            cancellationToken);
+
         if (paymentResult.IsFailure)
         {
             return Result.Failure<TripSummaryDto>(paymentResult.Error);
         }
+
+        var payment = paymentResult.Value;
 
         // Update vehicle location and status to Available
         var vehicleEndLocation = EcoRide.Modules.Fleet.Domain.ValueObjects.Location.Create(
@@ -104,11 +117,47 @@ public sealed class EndTripCommandHandler : ICommandHandler<EndTripCommand, Trip
             return Result.Failure<TripSummaryDto>(endVehicleTripResult.Error);
         }
 
-        // Save all changes
+        // Calculate distance and cost breakdown for receipt
+        var distanceMeters = trip.DurationMinutes * ActiveTrip.MockDistanceMetersPerMinute;
+        var baseCost = ActiveTrip.BaseCostMAD;
+        var timeCost = trip.DurationMinutes * ActiveTrip.PerMinuteRateMAD;
+
+        // Refresh user to get updated wallet balance (if wallet was used)
+        var updatedUser = await _userRepository.GetByIdAsync(request.UserId, cancellationToken);
+        var walletBalanceAfter = updatedUser?.WalletBalance ?? walletBalanceBefore;
+
+        // Generate receipt (TC-055: Download receipt - PDF generation)
+        var receiptResult = EcoRide.Modules.Trip.Domain.Entities.Receipt.Create(
+            trip.Id,
+            request.UserId,
+            vehicle.Code,
+            trip.StartTime,
+            trip.EndTime!.Value,
+            trip.DurationMinutes,
+            distanceMeters,
+            trip.StartLatitude,
+            trip.StartLongitude,
+            trip.EndLatitude!.Value,
+            trip.EndLongitude!.Value,
+            baseCost,
+            timeCost,
+            trip.TotalCost,
+            payment.Method.ToString(),
+            payment.Message,
+            walletBalanceBefore,
+            walletBalanceAfter);
+
+        if (receiptResult.IsFailure)
+        {
+            return Result.Failure<TripSummaryDto>(receiptResult.Error);
+        }
+
+        _receiptRepository.Add(receiptResult.Value);
+
+        // Save all changes (trip, vehicle, payment, receipt)
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        // Calculate distance (mock)
-        var distanceMeters = trip.DurationMinutes * ActiveTrip.MockDistanceMetersPerMinute;
+        // Format distance
         var distanceFormatted = distanceMeters >= 1000
             ? $"{distanceMeters / 1000.0:F1} km"
             : $"{distanceMeters} m";
@@ -118,11 +167,7 @@ public sealed class EndTripCommandHandler : ICommandHandler<EndTripCommand, Trip
             ? "1 minute"
             : $"{trip.DurationMinutes} minutes";
 
-        // Calculate cost breakdown
-        var baseCost = ActiveTrip.BaseCostMAD;
-        var timeCost = trip.DurationMinutes * ActiveTrip.PerMinuteRateMAD;
-
-        // Create trip summary
+        // Create trip summary with payment information
         var summary = new TripSummaryDto(
             trip.Id,
             trip.UserId,
@@ -137,9 +182,9 @@ public sealed class EndTripCommandHandler : ICommandHandler<EndTripCommand, Trip
             baseCost,
             timeCost,
             trip.TotalCost,
-            "Paid from Wallet",
+            payment.Message, // "Paid from Wallet" or "Paid with Visa ****1234"
             walletBalanceBefore,
-            user.WalletBalance,
+            walletBalanceAfter,
             trip.StartLatitude,
             trip.StartLongitude,
             trip.EndLatitude!.Value,

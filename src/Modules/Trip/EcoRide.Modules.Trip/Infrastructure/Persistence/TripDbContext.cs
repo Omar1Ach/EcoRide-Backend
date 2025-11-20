@@ -1,5 +1,6 @@
 using EcoRide.BuildingBlocks.Application.Data;
 using EcoRide.Modules.Trip.Domain.Aggregates;
+using EcoRide.Modules.Trip.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 
 namespace EcoRide.Modules.Trip.Infrastructure.Persistence;
@@ -15,6 +16,7 @@ public sealed class TripDbContext : DbContext, IUnitOfWork
 
     public DbSet<Reservation> Reservations => Set<Reservation>();
     public DbSet<ActiveTrip> Trips => Set<ActiveTrip>();
+    public DbSet<Receipt> Receipts => Set<Receipt>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

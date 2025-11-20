@@ -1,5 +1,6 @@
 using EcoRide.Modules.Security.Application.Data;
 using EcoRide.Modules.Security.Domain.Aggregates;
+using EcoRide.Modules.Security.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 
 namespace EcoRide.Modules.Security.Infrastructure.Persistence;
@@ -17,6 +18,7 @@ public sealed class SecurityDbContext : DbContext, ISecurityUnitOfWork
 
     public DbSet<User> Users => Set<User>();
     public DbSet<OtpCode> OtpCodes => Set<OtpCode>();
+    public DbSet<PaymentMethodEntity> PaymentMethods => Set<PaymentMethodEntity>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

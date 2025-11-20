@@ -35,6 +35,11 @@ public sealed class ActiveTrip : AggregateRoot<Guid>
     public decimal TotalCost { get; private set; }
     public int DurationMinutes { get; private set; }
 
+    // Rating (US-006: Trip rating feature)
+    public int? RatingStars { get; private set; }
+    public string? RatingComment { get; private set; }
+    public DateTime? RatedAt { get; private set; }
+
     public DateTime CreatedAt { get; private set; }
     public DateTime UpdatedAt { get; private set; }
 
@@ -193,4 +198,36 @@ public sealed class ActiveTrip : AggregateRoot<Guid>
     }
 
     public bool IsActive() => Status == TripStatus.Active;
+
+    /// <summary>
+    /// Add rating to completed trip (US-006: Trip rating feature)
+    /// </summary>
+    public Result AddRating(Rating rating)
+    {
+        if (Status != TripStatus.Completed)
+        {
+            return Result.Failure(new Error(
+                "Trip.NotCompleted",
+                "Cannot rate trip that is not completed"));
+        }
+
+        if (RatingStars.HasValue)
+        {
+            return Result.Failure(new Error(
+                "Trip.AlreadyRated",
+                "Trip has already been rated"));
+        }
+
+        RatingStars = rating.Stars;
+        RatingComment = rating.Comment;
+        RatedAt = DateTime.UtcNow;
+        UpdatedAt = DateTime.UtcNow;
+
+        return Result.Success();
+    }
+
+    /// <summary>
+    /// Check if trip has been rated
+    /// </summary>
+    public bool HasRating() => RatingStars.HasValue;
 }
