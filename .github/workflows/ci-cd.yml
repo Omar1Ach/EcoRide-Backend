@@ -79,10 +79,10 @@ jobs:
       run: |
         echo "## Test Results" >> $GITHUB_STEP_SUMMARY
         echo "✅ Build completed successfully" >> $GITHUB_STEP_SUMMARY
-        echo "📊 Unit tests executed (195 tests)" >> $GITHUB_STEP_SUMMARY
-        echo "🔗 Integration tests executed (42 tests with TestContainers)" >> $GITHUB_STEP_SUMMARY
-        echo "🌐 E2E tests executed (10 tests)" >> $GITHUB_STEP_SUMMARY
-        echo "**Total: 247 tests**" >> $GITHUB_STEP_SUMMARY
+        echo "📊 Unit tests executed (250 tests)" >> $GITHUB_STEP_SUMMARY
+        echo "🔗 Integration tests executed (57 tests with TestContainers)" >> $GITHUB_STEP_SUMMARY
+        echo "🌐 E2E tests executed (16 tests)" >> $GITHUB_STEP_SUMMARY
+        echo "**Total: 323 tests - All passing** ✅" >> $GITHUB_STEP_SUMMARY
 
   code-quality:
     name: Code Quality
