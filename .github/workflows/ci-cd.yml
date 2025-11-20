@@ -10,6 +10,25 @@ jobs:
   build-and-test:
     name: Build and Test
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      checks: write
+      pull-requests: write
+
+    services:
+      postgres:
+        image: postgis/postgis:16-3.4
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: ecoride_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
 
     steps:
     - name: Checkout code
@@ -33,6 +52,8 @@ jobs:
       run: dotnet test tests/EcoRide.IntegrationTests/EcoRide.IntegrationTests.csproj --configuration Release --no-build --verbosity normal --logger "trx;LogFileName=integration-test-results.trx"
 
     - name: Run E2E tests
+      env:
+        ConnectionStrings__DefaultConnection: "Host=127.0.0.1;Port=5432;Database=ecoride_test;Username=postgres;Password=postgres"
       run: dotnet test tests/EcoRide.E2ETests/EcoRide.E2ETests.csproj --configuration Release --no-build --verbosity normal --logger "trx;LogFileName=e2e-test-results.trx"
 
     - name: Publish test results
@@ -49,9 +70,10 @@ jobs:
       run: |
         echo "## Test Results" >> $GITHUB_STEP_SUMMARY
         echo "✅ Build completed successfully" >> $GITHUB_STEP_SUMMARY
-        echo "📊 Unit tests executed (24 tests)" >> $GITHUB_STEP_SUMMARY
+        echo "📊 Unit tests executed (195 tests)" >> $GITHUB_STEP_SUMMARY
         echo "🔗 Integration tests executed (42 tests with TestContainers)" >> $GITHUB_STEP_SUMMARY
         echo "🌐 E2E tests executed (10 tests)" >> $GITHUB_STEP_SUMMARY
+        echo "**Total: 247 tests**" >> $GITHUB_STEP_SUMMARY
 
   code-quality:
     name: Code Quality

@@ -29,7 +29,7 @@ public class QRCodeTests
     [InlineData("")]
     [InlineData(" ")]
     [InlineData(null)]
-    public void Create_WithEmptyCode_ShouldFail(string code)
+    public void Create_WithEmptyCode_ShouldFail(string? code)
     {
         // Act
         var result = QRCode.Create(code);
