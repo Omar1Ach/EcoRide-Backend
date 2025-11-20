@@ -18,13 +18,23 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddSecurityInfrastructure(
         this IServiceCollection services,
-        IConfiguration configuration)
+        IConfiguration configuration,
+        Action<DbContextOptionsBuilder>? dbContextOptions = null)
     {
         // Add DbContext
-        services.AddDbContext<SecurityDbContext>(options =>
-            options.UseNpgsql(
-                configuration.GetConnectionString("DefaultConnection"),
-                npgsqlOptions => npgsqlOptions.MigrationsHistoryTable("__EFMigrationsHistory", "security")));
+        if (dbContextOptions != null)
+        {
+            // Use custom database provider (for testing)
+            services.AddDbContext<SecurityDbContext>(dbContextOptions);
+        }
+        else
+        {
+            // Use PostgreSQL for production
+            services.AddDbContext<SecurityDbContext>(options =>
+                options.UseNpgsql(
+                    configuration.GetConnectionString("DefaultConnection"),
+                    npgsqlOptions => npgsqlOptions.MigrationsHistoryTable("__EFMigrationsHistory", "security")));
+        }
 
         // Register Security-specific Unit of Work (avoids conflicts with other modules)
         services.AddScoped<ISecurityUnitOfWork>(sp => sp.GetRequiredService<SecurityDbContext>());

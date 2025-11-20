@@ -15,19 +15,29 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddFleetInfrastructure(
         this IServiceCollection services,
-        IConfiguration configuration)
+        IConfiguration configuration,
+        Action<DbContextOptionsBuilder>? dbContextOptions = null)
     {
-        // Add DbContext with PostGIS support
-        services.AddDbContext<FleetDbContext>(options =>
+        // Add DbContext
+        if (dbContextOptions != null)
         {
-            options.UseNpgsql(
-                configuration.GetConnectionString("DefaultConnection"),
-                npgsqlOptions =>
-                {
-                    npgsqlOptions.MigrationsHistoryTable("__EFMigrationsHistory", "fleet");
-                    npgsqlOptions.UseNetTopologySuite(); // Enable PostGIS support
-                });
-        });
+            // Use custom database provider (for testing)
+            services.AddDbContext<FleetDbContext>(dbContextOptions);
+        }
+        else
+        {
+            // Use PostgreSQL with PostGIS support for production
+            services.AddDbContext<FleetDbContext>(options =>
+            {
+                options.UseNpgsql(
+                    configuration.GetConnectionString("DefaultConnection"),
+                    npgsqlOptions =>
+                    {
+                        npgsqlOptions.MigrationsHistoryTable("__EFMigrationsHistory", "fleet");
+                        npgsqlOptions.UseNetTopologySuite(); // Enable PostGIS support
+                    });
+            });
+        }
 
         // Register IUnitOfWork
         services.AddScoped<IUnitOfWork>(sp => sp.GetRequiredService<FleetDbContext>());

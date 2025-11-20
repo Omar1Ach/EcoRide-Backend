@@ -68,33 +68,49 @@ public sealed class VehicleRepository : IVehicleRepository
     {
         var query = _context.Vehicles.AsQueryable();
 
-        // Apply filters
-        if (!string.IsNullOrWhiteSpace(status))
+        // Apply filters - parse strings to enums to avoid ToString() in LINQ
+        if (!string.IsNullOrWhiteSpace(status) && Enum.TryParse<VehicleStatus>(status, out var statusEnum))
         {
-            query = query.Where(v => v.Status.ToString() == status);
+            query = query.Where(v => v.Status == statusEnum);
         }
 
-        if (!string.IsNullOrWhiteSpace(type))
+        if (!string.IsNullOrWhiteSpace(type) && Enum.TryParse<VehicleType>(type, out var typeEnum))
         {
-            query = query.Where(v => v.Type.ToString() == type);
+            query = query.Where(v => v.Type == typeEnum);
         }
+
+        // For battery level with value objects, use client evaluation to avoid EF Core translation issues
+        List<Vehicle> allVehicles;
+        int totalCount;
 
         if (minBatteryLevel.HasValue)
         {
-            query = query.Where(v => v.BatteryLevel.Value >= minBatteryLevel.Value);
+            // Fetch from database first (with status/type filters applied)
+            var tempResults = await query.OrderByDescending(v => v.CreatedAt).ToListAsync(cancellationToken);
+
+            // Apply battery filter in memory
+            var filtered = tempResults.Where(v => v.BatteryLevel.Value >= minBatteryLevel.Value).ToList();
+            totalCount = filtered.Count;
+
+            // Apply pagination in memory
+            allVehicles = filtered
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToList();
+        }
+        else
+        {
+            // No battery filter - use normal database pagination
+            totalCount = await query.CountAsync(cancellationToken);
+
+            allVehicles = await query
+                .OrderByDescending(v => v.CreatedAt)
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync(cancellationToken);
         }
 
-        // Get total count before pagination
-        var totalCount = await query.CountAsync(cancellationToken);
-
-        // Apply pagination
-        var vehicles = await query
-            .OrderByDescending(v => v.CreatedAt)
-            .Skip((pageNumber - 1) * pageSize)
-            .Take(pageSize)
-            .ToListAsync(cancellationToken);
-
-        return (vehicles, totalCount);
+        return (allVehicles, totalCount);
     }
 
     public async Task AddAsync(Vehicle vehicle, CancellationToken cancellationToken = default)

@@ -9,13 +9,23 @@
 
   <ItemGroup>
     <PackageReference Include="coverlet.collector" Version="6.0.2" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="9.0.0" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="9.0.2" />
+    <PackageReference Include="Testcontainers.PostgreSql" Version="3.10.0" />
     <PackageReference Include="xunit" Version="2.9.2" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2" />
   </ItemGroup>
 
   <ItemGroup>
     <Using Include="Xunit" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\EcoRide.Api\EcoRide.Api.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Security\EcoRide.Modules.Security\EcoRide.Modules.Security.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Fleet\EcoRide.Modules.Fleet\EcoRide.Modules.Fleet.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Trip\EcoRide.Modules.Trip\EcoRide.Modules.Trip.csproj" />
   </ItemGroup>
 
 </Project>
