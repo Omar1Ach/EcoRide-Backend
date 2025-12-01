@@ -20,6 +20,7 @@ public sealed class SecurityDbContext : DbContext, ISecurityUnitOfWork
     public DbSet<OtpCode> OtpCodes => Set<OtpCode>();
     public DbSet<PaymentMethodEntity> PaymentMethods => Set<PaymentMethodEntity>();
     public DbSet<WalletTransaction> WalletTransactions => Set<WalletTransaction>();
+    public DbSet<UserSettings> UserSettings => Set<UserSettings>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

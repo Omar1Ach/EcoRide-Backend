@@ -131,6 +131,52 @@ public sealed class User : AggregateRoot<Guid>
     }
 
     /// <summary>
+    /// Update user profile information
+    /// </summary>
+    public Result UpdateProfile(FullName fullName, Email email, PhoneNumber phoneNumber)
+    {
+        if (fullName == null)
+        {
+            return Result.Failure(
+                new Error("User.InvalidFullName", "Full name is required"));
+        }
+
+        if (email == null)
+        {
+            return Result.Failure(
+                new Error("User.InvalidEmail", "Email is required"));
+        }
+
+        if (phoneNumber == null)
+        {
+            return Result.Failure(
+                new Error("User.InvalidPhoneNumber", "Phone number is required"));
+        }
+
+        // If email or phone changed, reset verification status
+        bool emailChanged = Email.Value != email.Value;
+        bool phoneChanged = PhoneNumber.Value != phoneNumber.Value;
+
+        FullName = fullName;
+        Email = email;
+        PhoneNumber = phoneNumber;
+
+        if (emailChanged)
+        {
+            EmailVerified = false;
+        }
+
+        if (phoneChanged)
+        {
+            PhoneVerified = false;
+        }
+
+        UpdatedAt = DateTime.UtcNow;
+
+        return Result.Success();
+    }
+
+    /// <summary>
     /// Soft deletes the user account
     /// </summary>
     public Result Deactivate()
